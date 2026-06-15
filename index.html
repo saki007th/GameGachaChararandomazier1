@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - Direct API with History</title>
+    <title>Gacha Guessing Game - v3.0 Smart RNG</title>
     <style>
         :root {
             --bg-color: #1e272e;
@@ -64,185 +64,94 @@
         }
 
         .filter-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #d2dae2;
-            cursor: pointer;
-            font-size: 0.95rem;
-            user-select: none;
-            transition: color 0.2s;
+            display: flex; align-items: center; gap: 8px; color: #d2dae2; cursor: pointer;
+            font-size: 0.95rem; user-select: none; transition: color 0.2s;
         }
         .filter-label:hover { color: var(--text-color); }
-        .filter-label input[type="checkbox"] {
-            cursor: pointer;
-            accent-color: var(--primary-color);
-            width: 16px;
-            height: 16px;
-        }
+        .filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary-color); width: 16px; height: 16px; }
 
         #game-container {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 800px;
-            padding: 20px;
-            flex: 1;
-            justify-content: center;
+            text-align: center; display: flex; flex-direction: column; align-items: center;
+            width: 100%; max-width: 800px; padding: 20px; flex: 1; justify-content: center;
         }
 
         #image-wrapper {
-            position: relative;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            min-width: 320px;
-            min-height: 450px;
-            max-height: 55vh;
-            max-width: 100%;
-            background-color: rgba(255, 255, 255, 0.02);
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative; display: inline-flex; justify-content: center; align-items: center;
+            min-width: 320px; min-height: 450px; max-height: 55vh; max-width: 100%;
+            background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         #character-img {
-            display: block;
-            max-height: 55vh;
-            max-width: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            pointer-events: none;
-            user-select: none;
-            border-radius: 8px;
-            transition: opacity 0.3s;
+            display: block; max-height: 55vh; max-width: 100%; width: auto; height: auto;
+            object-fit: contain; pointer-events: none; user-select: none; border-radius: 8px; transition: opacity 0.3s;
         }
 
         #grid-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: grid;
-            border-radius: 8px;
-            overflow: hidden;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: grid; border-radius: 8px; overflow: hidden;
         }
 
-        .grid-tile {
-            background-color: #1e272e;
-            border: 1px solid #485460;
-            transition: opacity 0.3s ease;
-            cursor: pointer;
-        }
+        .grid-tile { background-color: #1e272e; border: 1px solid #485460; transition: opacity 0.3s ease; cursor: pointer; }
         .grid-tile:hover { background-color: #2d3436; }
 
         #loading-indicator {
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: var(--primary-color);
-            font-weight: bold;
-            font-size: 1.1rem;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            position: absolute; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; color: var(--primary-color); font-weight: bold; font-size: 1.1rem;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         #loading-indicator.show { opacity: 1; }
         .spinner {
-            width: 40px; height: 40px;
-            border: 4px solid rgba(15, 185, 177, 0.3);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            width: 40px; height: 40px; border: 4px solid rgba(15, 185, 177, 0.3);
+            border-top: 4px solid var(--primary-color); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #character-info {
-            margin-top: 25px;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            height: 90px;
-        }
+        #character-info { margin-top: 25px; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease, transform 0.4s ease; height: 90px; }
         #character-info.revealed { opacity: 1; transform: translateY(0); }
-
         #char-name { font-size: 2.5rem; margin-bottom: 5px; color: var(--primary-color); text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
         #char-game { font-size: 1.2rem; color: #d2dae2; }
 
         .controls-hint {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            color: #808e9b;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
+            margin-top: 10px; padding: 10px 20px; background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px; color: #808e9b; font-size: 0.9rem; letter-spacing: 0.5px;
         }
-        kbd {
-            background-color: #485460;
-            padding: 3px 8px;
-            border-radius: 4px;
-            color: white;
-            font-family: monospace;
-        }
+        kbd { background-color: #485460; padding: 3px 8px; border-radius: 4px; color: white; font-family: monospace; }
 
-        /* ==================== 
-           CSS: History Modal
-           ==================== */
+        /* History Modal */
         #history-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85);
+            display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
-        #history-modal.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        #history-modal.show { opacity: 1; pointer-events: auto; }
         .modal-content {
-            background: var(--panel-bg);
-            width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
-            border-radius: 12px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: var(--panel-bg); width: 90%; max-width: 500px; max-height: 80vh;
+            border-radius: 12px; padding: 25px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #485460; padding-bottom: 15px;
-        }
-        .close-btn {
-            background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1;
-        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #485460; padding-bottom: 15px; }
+        .close-btn { background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1; }
         .close-btn:hover { color: white; }
-        .history-list {
-            flex: 1; overflow-y: auto; list-style: none;
-        }
+        .history-list { flex: 1; overflow-y: auto; list-style: none; }
         .history-list::-webkit-scrollbar { width: 6px; }
         .history-list::-webkit-scrollbar-thumb { background: #485460; border-radius: 3px; }
-        
         .history-item {
-            display: flex; align-items: center; gap: 15px;
-            background: #1e272e; padding: 10px; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 15px; background: #1e272e; padding: 10px; margin-bottom: 10px;
             border-radius: 8px; border-left: 4px solid var(--primary-color);
         }
-        .history-img {
-            width: 60px; height: 60px; border-radius: 4px; object-fit: cover; background: #000;
-        }
+        .history-img { width: 60px; height: 60px; border-radius: 4px; object-fit: cover; background: #000; }
         .history-info { display: flex; flex-direction: column; overflow: hidden; }
         .history-info strong { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary-color); }
         .history-info small { color: #d2dae2; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ป้ายเวอร์ชันแอป */
+        .app-version {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.3);
+            pointer-events: none;
+        }
 
     </style>
 </head>
@@ -265,7 +174,7 @@
         <div id="image-wrapper">
             <div id="loading-indicator">
                 <div class="spinner"></div>
-                <span>กำลังดึงข้อมูลฐานภาพ...</span>
+                <span id="loading-text">กำลังดึงข้อมูลฐานภาพ...</span>
             </div>
             
             <img id="character-img" src="" alt="Gacha Character">
@@ -288,50 +197,74 @@
                 <h2>🕒 ประวัติการทาย (รอบนี้)</h2>
                 <button class="close-btn" id="close-history-btn">&times;</button>
             </div>
-            <ul class="history-list" id="history-list">
-                </ul>
+            <ul class="history-list" id="history-list"></ul>
         </div>
     </div>
 
+    <div class="app-version">v3.0 - Smart RNG System</div>
+
     <script>
+        // ขยายฐานข้อมูลตัวละครเพื่อลดความซ้ำซาก
         const SAFEBOORU_DB = [
             // --- Genshin Impact ---
             { name: "Hu Tao", game: "Genshin Impact", tag: "hu_tao_(genshin_impact)" },
             { name: "Raiden Shogun", game: "Genshin Impact", tag: "raiden_shogun" },
             { name: "Furina", game: "Genshin Impact", tag: "furina_(genshin_impact)" },
             { name: "Navia", game: "Genshin Impact", tag: "navia_(genshin_impact)" },
+            { name: "Zhongli", game: "Genshin Impact", tag: "zhongli_(genshin_impact)" },
+            { name: "Yelan", game: "Genshin Impact", tag: "yelan_(genshin_impact)" },
+            { name: "Nahida", game: "Genshin Impact", tag: "nahida_(genshin_impact)" },
+            { name: "Arlecchino", game: "Genshin Impact", tag: "arlecchino_(genshin_impact)" },
 
             // --- Honkai: Star Rail ---
             { name: "Kafka", game: "Honkai: Star Rail", tag: "kafka_(honkai:_star_rail)" },
             { name: "Firefly", game: "Honkai: Star Rail", tag: "firefly_(honkai:_star_rail)" },
             { name: "Acheron", game: "Honkai: Star Rail", tag: "acheron_(honkai:_star_rail)" },
             { name: "Silver Wolf", game: "Honkai: Star Rail", tag: "silver_wolf_(honkai:_star_rail)" },
+            { name: "Jingliu", game: "Honkai: Star Rail", tag: "jingliu_(honkai:_star_rail)" },
+            { name: "Ruan Mei", game: "Honkai: Star Rail", tag: "ruan_mei_(honkai:_star_rail)" },
+            { name: "Sparkle", game: "Honkai: Star Rail", tag: "sparkle_(honkai:_star_rail)" },
+            { name: "Robin", game: "Honkai: Star Rail", tag: "robin_(honkai:_star_rail)" },
 
             // --- Arknights ---
             { name: "Amiya", game: "Arknights", tag: "amiya_(arknights)" },
             { name: "Ch'en", game: "Arknights", tag: "ch'en_(arknights)" },
             { name: "Texas", game: "Arknights", tag: "texas_(arknights)" },
             { name: "Exusiai", game: "Arknights", tag: "exusiai_(arknights)" },
+            { name: "Surtr", game: "Arknights", tag: "surtr_(arknights)" },
+            { name: "Mudrock", game: "Arknights", tag: "mudrock_(arknights)" },
+            { name: "Kal'tsit", game: "Arknights", tag: "kal'tsit_(arknights)" },
+            { name: "Skadi", game: "Arknights", tag: "skadi_(arknights)" },
 
             // --- Blue Archive ---
             { name: "Shiroko", game: "Blue Archive", tag: "sunaookami_shiroko" },
             { name: "Yuuka", game: "Blue Archive", tag: "hayase_yuuka" },
             { name: "Hina", game: "Blue Archive", tag: "sorasaki_hina" },
             { name: "Aris", game: "Blue Archive", tag: "tendou_aris" },
+            { name: "Aru", game: "Blue Archive", tag: "rikuhachima_aru" },
+            { name: "Mika", game: "Blue Archive", tag: "misono_mika" },
+            { name: "Hoshino", game: "Blue Archive", tag: "takanashi_hoshino" },
+            { name: "Toki", game: "Blue Archive", tag: "asuma_toki" },
 
             // --- Zenless Zone Zero (ZZZ) ---
             { name: "Anby Demara", game: "Zenless Zone Zero", tag: "anby_demara" },
             { name: "Nicole Demara", game: "Zenless Zone Zero", tag: "nicole_demara" },
             { name: "Ellen Joe", game: "Zenless Zone Zero", tag: "ellen_joe" },
-            { name: "Zhu Yuan", game: "Zenless Zone Zero", tag: "zhu_yuan_(zenless_zone_zero)" }
+            { name: "Zhu Yuan", game: "Zenless Zone Zero", tag: "zhu_yuan_(zenless_zone_zero)" },
+            { name: "Miyabi", game: "Zenless Zone Zero", tag: "hoshimi_miyabi" },
+            { name: "Soldier 11", game: "Zenless Zone Zero", tag: "soldier_11_(zenless_zone_zero)" }
         ];
 
+        let localCharacters = []; // เก็บข้อมูลจาก Admin
+        let drawPool = []; // กองไพ่สำหรับจั่ว (กันซ้ำ)
+        
         let currentCharacter = null;
         let isRevealed = false;
         let isLoading = false;
         let unrevealedTiles = [];
-        let playHistory = []; // ตัวแปรเก็บประวัติการทาย
-        
+        let playHistory = []; 
+        let retryCount = 0;
+        const MAX_RETRIES = 5;
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
 
@@ -342,9 +275,8 @@
             nameDisplay: document.getElementById('char-name'),
             gameDisplay: document.getElementById('char-game'),
             loading: document.getElementById('loading-indicator'),
+            loadingText: document.getElementById('loading-text'),
             filterCheckboxes: document.querySelectorAll('#game-filters input[type="checkbox"]'),
-            
-            // History DOM
             btnHistory: document.getElementById('btn-history'),
             historyModal: document.getElementById('history-modal'),
             closeHistoryBtn: document.getElementById('close-history-btn'),
@@ -352,24 +284,77 @@
         };
 
         function init() {
+            loadLocalData();
             setupEventListeners();
-            loadRandomCharacterFromSafebooru();
+            loadRandomCharacter();
+
+            // รับฟังการอัปเดตจากหน้า Admin สดๆ
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'gachaGameData') {
+                    loadLocalData();
+                }
+            });
         }
 
+        function loadLocalData() {
+            const rawData = localStorage.getItem('gachaGameData');
+            if (rawData) {
+                localCharacters = JSON.parse(rawData);
+            } else {
+                localCharacters = [];
+            }
+            drawPool = []; // สั่งให้สับไพ่ใหม่เมื่อมีการเพิ่มลดข้อมูล
+        }
+
+        // รวมฐานข้อมูล API และข้อมูลที่คุณเพิ่มเอง (Admin)
         function getFilteredDatabase() {
             const selectedGames = Array.from(dom.filterCheckboxes)
                                        .filter(cb => cb.checked)
                                        .map(cb => cb.value);
-            return SAFEBOORU_DB.filter(char => selectedGames.includes(char.game));
+            
+            const apiChars = SAFEBOORU_DB.filter(char => selectedGames.includes(char.game));
+            // นำตัวละครที่คุณสร้างเองในหน้า Admin มารวมด้วยเสมอ
+            const localChars = localCharacters; 
+
+            return [...apiChars, ...localChars];
         }
 
-        async function loadRandomCharacterFromSafebooru() {
+        // ระบบสับไพ่ (Bag RNG)
+        function refillPool() {
+            const activeDatabase = getFilteredDatabase();
+            if (activeDatabase.length === 0) return false;
+            
+            drawPool = [...activeDatabase];
+            // Fisher-Yates Shuffle Algorithm
+            for (let i = drawPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [drawPool[i], drawPool[j]] = [drawPool[j], drawPool[i]];
+            }
+            return true;
+        }
+
+        function handleAutoRetry(errorMessage) {
+            if (retryCount < MAX_RETRIES) {
+                retryCount++;
+                dom.loadingText.textContent = `พบรูปเสีย กำลังสุ่มใหม่... (ครั้งที่ ${retryCount})`;
+                isLoading = false; 
+                setTimeout(() => loadRandomCharacter(), 800);
+            } else {
+                isLoading = false;
+                retryCount = 0;
+                showError(errorMessage + " (ข้ามภาพอัตโนมัติเกินขีดจำกัด)");
+            }
+        }
+
+        async function loadRandomCharacter() {
             if (isLoading) return;
             
-            const activeDatabase = getFilteredDatabase();
-            if (activeDatabase.length === 0) {
-                alert("กรุณาเลือกเกมอย่างน้อย 1 เกมครับ!");
-                return;
+            // เช็คกองไพ่ ถ้าไพ่หมดกองให้สับใหม่
+            if (drawPool.length === 0) {
+                if (!refillPool()) {
+                    alert("กรุณาเลือกเกมอย่างน้อย 1 เกม หรือเพิ่มข้อมูลเอง!");
+                    return;
+                }
             }
 
             isLoading = true;
@@ -379,42 +364,50 @@
             dom.gridOverlay.innerHTML = ''; 
             dom.infoBox.classList.remove('revealed');
             dom.loading.classList.add('show');
+            
+            if (retryCount === 0) dom.loadingText.textContent = "กำลังดึงข้อมูลฐานภาพ...";
 
-            const char = activeDatabase[Math.floor(Math.random() * activeDatabase.length)];
+            // จั่วไพ่ใบบนสุดออกจากการสุ่ม
+            const char = drawPool.pop();
             currentCharacter = char;
             dom.nameDisplay.textContent = char.name;
             dom.gameDisplay.textContent = char.game;
 
             try {
-                const searchTags = `solo ${char.tag}`;
-                const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&tags=${encodeURIComponent(searchTags)}`;
-                
-                const response = await fetch(targetApiUrl);
-                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                // เช็คว่าเป็นข้อมูล Local (มี url) หรือ API (มี tag)
+                if (char.url) {
+                    // โหลดรูปจาก Admin
+                    dom.img.src = char.url;
+                } else if (char.tag) {
+                    // โหลดรูปจาก Safebooru
+                    const searchTags = `solo ${char.tag}`;
+                    const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&tags=${encodeURIComponent(searchTags)}`;
+                    
+                    const response = await fetch(targetApiUrl);
+                    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
-                const data = await response.json();
+                    const data = await response.json();
+                    const validPosts = data.filter(post => 
+                        (post.large_file_url || post.file_url) && 
+                        !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)
+                    );
 
-                const validPosts = data.filter(post => 
-                    (post.large_file_url || post.file_url) && 
-                    !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)
-                );
-
-                if (validPosts && validPosts.length > 0) {
-                    const randomPost = validPosts[Math.floor(Math.random() * validPosts.length)];
-                    const imageUrl = randomPost.large_file_url || randomPost.file_url;
-                    dom.img.src = imageUrl;
-                } else {
-                    throw new Error("ไม่มีภาพ หรือภาพถูกซ่อนลิขสิทธิ์");
+                    if (validPosts && validPosts.length > 0) {
+                        const randomPost = validPosts[Math.floor(Math.random() * validPosts.length)];
+                        dom.img.src = randomPost.large_file_url || randomPost.file_url;
+                    } else {
+                        throw new Error("ไม่มีภาพ หรือภาพถูกซ่อนลิขสิทธิ์");
+                    }
                 }
             } catch (error) {
                 console.error("Fetch Error:", error);
-                showError(`เชื่อมต่อล้มเหลว: ${error.message}`);
-                isLoading = false;
+                handleAutoRetry(`การดึงข้อมูลล้มเหลว`);
             }
         }
 
         dom.img.onload = () => {
             if(!currentCharacter) return;
+            retryCount = 0; 
             dom.loading.classList.remove('show');
             dom.img.style.opacity = 1; 
             createGrid();
@@ -422,8 +415,7 @@
         };
 
         dom.img.onerror = () => {
-            showError("โหลดรูปล้มเหลว หรือรูปภาพต้นทางถูกลบ");
-            isLoading = false;
+            handleAutoRetry("ไฟล์รูปต้นทางเสียหาย หรือเป็นลิงก์เว็บไซต์แทนที่จะเป็นรูปภาพ");
         }
 
         function showError(message) {
@@ -435,10 +427,10 @@
                     <span style="font-size: 3rem; margin-bottom: 10px;">⚠️</span>
                     <strong style="font-size: 1.2rem;">ข้อผิดพลาด</strong>
                     <p style="font-size: 0.9rem; margin-top: 5px; color: #d2dae2;">${message}</p>
-                    <small style="margin-top: 15px;">กด Enter เพื่อสุ่มใหม่</small>
+                    <small style="margin-top: 15px;">กด Enter เพื่อสั่งสุ่มใหม่ด้วยตัวเอง</small>
                 </div>
             `;
-            revealCharacterInfo(); 
+            dom.infoBox.classList.add('revealed'); 
         }
 
         function createGrid() {
@@ -489,9 +481,7 @@
             isRevealed = true;
             dom.infoBox.classList.add('revealed');
             
-            // --- ระบบบันทึกประวัติ ---
             if (currentCharacter && dom.img.src) {
-                // เช็คว่ารูปล่าสุดไม่ซ้ำกับประวัติใบบนสุด
                 if (playHistory.length === 0 || playHistory[0].url !== dom.img.src) {
                     playHistory.unshift({
                         name: currentCharacter.name,
@@ -502,7 +492,6 @@
             }
         }
 
-        // --- ฟังก์ชันจัดการ History Modal ---
         function openHistoryModal() {
             dom.historyList.innerHTML = '';
             if (playHistory.length === 0) {
@@ -532,16 +521,16 @@
         function setupEventListeners() {
             dom.filterCheckboxes.forEach(cb => {
                 cb.addEventListener('change', function() {
+                    drawPool = []; // สั่งให้สับไพ่ใหม่เมื่อมีการติ๊กถูก/ออก
                     this.blur();
                 });
             });
 
-            // ปุ่มเปิด/ปิดประวัติ
             dom.btnHistory.addEventListener('click', openHistoryModal);
             dom.closeHistoryBtn.addEventListener('click', closeHistoryModal);
 
             document.addEventListener('keydown', (e) => {
-                if (dom.historyModal.classList.contains('show')) return; // ถ้าเปิดหน้าต่างประวัติอยู่ ไม่ต้องรับคำสั่งคีย์บอร์ดเกม
+                if (dom.historyModal.classList.contains('show')) return; 
 
                 if (e.code === 'Space') {
                     e.preventDefault(); 
@@ -551,11 +540,13 @@
                     revealAll();
                 } else if (e.code === 'Enter') {
                     e.preventDefault();
-                    // ถ้ายังไม่เฉลยแล้วกดข้าม ให้ถือว่ายอมแพ้ และบันทึกลงประวัติเลย
                     if (!isRevealed && currentCharacter) {
                         revealCharacterInfo();
                     }
-                    if (!isLoading) loadRandomCharacterFromSafebooru();
+                    if (!isLoading) {
+                        retryCount = 0; 
+                        loadRandomCharacter();
+                    }
                 }
             });
         }
