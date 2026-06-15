@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v4.2 Party Mode</title>
+    <title>Gacha Guessing Game - v4.3 Score Fixed</title>
     <style>
         :root {
             --bg-color: #1e272e;
@@ -33,78 +33,56 @@
            Scoreboard System
            ==================== */
         .scoreboard-container {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(45, 52, 54, 0.9);
-            border-radius: 8px;
-            padding: 15px;
-            width: 260px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 100;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            backdrop-filter: blur(5px);
+            position: absolute; top: 20px; left: 20px; background: rgba(45, 52, 54, 0.9);
+            border-radius: 8px; padding: 15px; width: 270px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1); z-index: 100; max-height: 80vh;
+            display: flex; flex-direction: column; backdrop-filter: blur(5px);
         }
         .scoreboard-header {
             margin-bottom: 10px; font-size: 1.1rem; color: var(--primary-color);
-            border-bottom: 1px solid #485460; padding-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #485460; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
         }
-        .player-list {
-            flex: 1; overflow-y: auto; list-style: none; margin-bottom: 10px;
-        }
+        .player-list { flex: 1; overflow-y: auto; list-style: none; margin-bottom: 10px; }
         .player-list::-webkit-scrollbar { width: 4px; }
         .player-list::-webkit-scrollbar-thumb { background: #485460; border-radius: 2px; }
         
         .player-item {
             display: flex; justify-content: space-between; align-items: center;
             background: #1e272e; padding: 8px 10px; margin-bottom: 8px;
-            border-radius: 6px; cursor: pointer; border-left: 3px solid transparent;
-            transition: all 0.2s;
+            border-radius: 6px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s;
         }
         .player-item:hover { background: #353b48; }
-        .player-item.active {
-            border-left-color: var(--primary-color);
-            background: rgba(15, 185, 177, 0.15);
-        }
+        .player-item.active { border-left-color: var(--primary-color); background: rgba(15, 185, 177, 0.15); }
         .player-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; }
-        .player-score { font-weight: bold; color: var(--edit-color); font-size: 1.1rem; margin-left: 10px; }
+        .player-score { font-weight: bold; color: var(--edit-color); font-size: 1.2rem; margin-left: 10px; }
         
         .add-player-box { display: flex; gap: 5px; }
         .add-player-box input {
-            flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #485460;
-            background: #1e272e; color: white; width: 100%; outline: none;
+            flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #485460; background: #1e272e; color: white; width: 100%; outline: none;
         }
         .add-player-box input:focus { border-color: var(--primary-color); }
         .add-player-box button {
-            background: var(--primary-color); border: none; color: white;
-            padding: 0 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            background: var(--primary-color); border: none; color: white; padding: 0 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
         }
 
-        /* ปุ่มให้คะแนน (ซ่อนไว้ โชว์ตอนเฉลย) */
+        /* ปุ่มให้คะแนน */
         .award-btn {
             background: var(--success-color); border: none; color: white;
-            padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;
-            cursor: pointer; display: none; font-weight: bold;
+            padding: 5px 8px; border-radius: 4px; font-size: 0.85rem;
+            cursor: pointer; display: none; font-weight: bold; margin-left: 10px;
             animation: popIn 0.3s ease;
         }
-        .award-btn:hover { opacity: 0.8; }
+        .award-btn:hover { background: #2ed573; transform: scale(1.05); }
         @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
         
+        /* เมื่อเข้าโหมดให้คะแนน จะแสดงปุ่ม และยังคงแสดงคะแนนรวมไว้ */
         .player-item.can-award .award-btn { display: block; }
-        .player-item.can-award .player-score { display: none; }
         .player-item.can-award .delete-btn { display: none; }
 
-        .delete-btn { background: none; border: none; color: #fc5c65; cursor: pointer; margin-left: 8px; font-size: 1.1rem; opacity: 0.5; }
+        .delete-btn { background: none; border: none; color: #fc5c65; cursor: pointer; margin-left: 8px; font-size: 1.2rem; opacity: 0.5; }
         .delete-btn:hover { opacity: 1; }
 
-        .top-menu {
-            position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; align-items: center; z-index: 100;
-        }
-
+        .top-menu { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; align-items: center; z-index: 100; }
         .btn-menu {
             background: rgba(255, 255, 255, 0.1); color: var(--text-color); border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 9px 15px; border-radius: 6px; text-decoration: none; font-size: 0.95rem; transition: all 0.2s; cursor: pointer;
@@ -125,6 +103,13 @@
         #game-container {
             text-align: center; display: flex; flex-direction: column; align-items: center;
             width: 100%; max-width: 800px; padding: 20px; flex: 1; justify-content: center;
+        }
+
+        /* ป้ายแสดงโบนัสกลางจอ */
+        .round-bonus-badge {
+            background: rgba(254, 211, 48, 0.15); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.3);
+            padding: 8px 25px; border-radius: 20px; font-size: 1.25rem; font-weight: bold; margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: inline-block; transition: all 0.2s;
         }
 
         #image-wrapper {
@@ -229,6 +214,11 @@
     </div>
 
     <div id="game-container">
+        
+        <div class="round-bonus-badge">
+            🏆 โบนัสข้อนี้: <span id="round-bonus-display">36</span> คะแนน
+        </div>
+
         <div id="image-wrapper">
             <div id="loading-indicator">
                 <div class="spinner"></div>
@@ -259,7 +249,7 @@
         </div>
     </div>
 
-    <div class="app-version">v4.2 - Party Mode (Score System)</div>
+    <div class="app-version">v4.3 - Score System Fixed</div>
 
     <script>
         const GAME_TAGS = {
@@ -278,9 +268,10 @@
         let playHistory = []; 
         let retryCount = 0;
         
-        // ระบบผู้เล่น
+        // ตัวแปรควบคุมระบบคะแนน
         let players = JSON.parse(localStorage.getItem('gachaPlayers')) || [];
         let activePlayerId = null;
+        let hasAwarded = false; // ป้องกันการกดแจกคะแนนซ้ำในข้อเดิม
 
         const MAX_RETRIES = 10; 
         const GRID_ROWS = 6; 
@@ -300,7 +291,8 @@
             closeHistoryBtn: document.getElementById('close-history-btn'),
             historyList: document.getElementById('history-list'),
             playersList: document.getElementById('players-list'),
-            newPlayerInput: document.getElementById('new-player-name')
+            newPlayerInput: document.getElementById('new-player-name'),
+            roundBonusDisplay: document.getElementById('round-bonus-display')
         };
 
         function init() {
@@ -318,7 +310,7 @@
             });
         }
 
-        // --- ระบบ Scoreboard ---
+        // --- ระบบ Scoreboard System ---
         function savePlayers() {
             localStorage.setItem('gachaPlayers', JSON.stringify(players));
         }
@@ -326,11 +318,16 @@
         function renderPlayers() {
             dom.playersList.innerHTML = '';
             
-            // คำนวณคะแนนโบนัส ณ ปัจจุบัน (จำนวนแผ่นป้ายที่ยังไม่ได้เปิด)
-            const currentBonus = unrevealedTiles ? unrevealedTiles.length : 0;
-            const isAwardPhase = isRevealed && !isLoading && currentCharacter;
+            // คำนวณคะแนนโบนัส ณ ปัจจุบัน (จำนวนแผ่นป้ายที่ยังไม่ได้เปิด เริ่มที่ 36)
+            const currentBonus = unrevealedTiles.length > 0 ? unrevealedTiles.length : (isRevealed ? 0 : 36);
+            
+            // อัปเดตป้ายโบนัสยักษ์กลางจอ
+            if (dom.roundBonusDisplay) dom.roundBonusDisplay.textContent = currentBonus;
 
-            // เรียงลำดับคนคะแนนเยอะสุดขึ้นบน
+            // เช็คว่าอยู่ในช่วงแจกคะแนนหรือไม่ (เฉลยแล้ว + ยังไม่โหลดใหม่ + ยังไม่ได้แจกใคร)
+            const isAwardPhase = isRevealed && !isLoading && currentCharacter && !hasAwarded;
+
+            // เรียงลำดับคนคะแนนเยอะสุดขึ้นบนสุด
             const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
             if(sortedPlayers.length === 0) {
@@ -342,21 +339,20 @@
                 const li = document.createElement('li');
                 li.className = `player-item ${p.id === activePlayerId ? 'active' : ''} ${isAwardPhase ? 'can-award' : ''}`;
                 
-                // คลิกเพื่อตั้งให้เป็นผู้เล่นปัจจุบัน (คนที่กำลังจะกดเปิดแผ่นป้าย)
+                // คลิกเพื่อตั้งให้เป็นคนที่ถึงคิวเปิดแผ่นป้าย
                 li.onclick = (e) => {
-                    if(!e.target.classList.contains('award-btn') && !e.target.classList.contains('delete-btn')) {
+                    if(!e.target.closest('button')) {
                         activePlayerId = p.id;
                         renderPlayers();
                     }
                 };
 
+                // วาด UI ผู้เล่น และปุ่มกดให้คะแนน (ซ่อนอยู่ จะโผล่ตอนเฉลย)
                 li.innerHTML = `
                     <span class="player-name">${p.name}</span>
                     <span class="player-score">${p.score}</span>
-                    <button class="award-btn" onclick="awardPoints('${p.id}', ${currentBonus}); event.stopPropagation();">
-                        ตอบถูก! +${currentBonus}
-                    </button>
-                    <button class="delete-btn" onclick="removePlayer('${p.id}'); event.stopPropagation();" title="ลบผู้เล่น">×</button>
+                    ${isAwardPhase ? `<button class="award-btn" onclick="awardPoints('${p.id}', ${currentBonus}); event.stopPropagation();">+${currentBonus}</button>` : ''}
+                    ${!isAwardPhase ? `<button class="delete-btn" onclick="removePlayer('${p.id}'); event.stopPropagation();" title="ลบผู้เล่น">×</button>` : ''}
                 `;
                 dom.playersList.appendChild(li);
             });
@@ -368,7 +364,6 @@
                 players.push({ id: Date.now().toString(), name: name, score: 0 });
                 savePlayers();
                 dom.newPlayerInput.value = '';
-                // ถ้ามีคนเดียว ให้เซ็ตเป็น active เลย
                 if(players.length === 1) activePlayerId = players[0].id;
                 renderPlayers();
             }
@@ -391,17 +386,17 @@
             }
         };
 
+        // ฟังก์ชันแจกคะแนน
         window.awardPoints = function(id, points) {
+            if(hasAwarded) return; // กันกดเบิ้ล
             const player = players.find(p => p.id === id);
             if(player) {
                 player.score += points;
+                hasAwarded = true; // ล็อกไม่ให้แจกคะแนนข้อนี้ได้อีก
                 savePlayers();
-                renderPlayers();
+                renderPlayers(); // รีเฟรชกระดาน คะแนนจะเพิ่มขึ้นทันที และปุ่มสีเขียวจะหายไป
                 
-                // เอฟเฟกต์พลุเบาๆ (จำลองด้วย Alert หรือเริ่มรอบใหม่เลย)
-                setTimeout(() => {
-                    loadRandomCharacter();
-                }, 400);
+                // ลบการบังคับโหลดข้อใหม่ทิ้ง เพื่อให้ผู้เล่นได้เห็นคะแนนก่อน แล้วค่อยกด Enter ไปข้อถัดไปเอง
             }
         };
         // -------------------------
@@ -449,12 +444,13 @@
 
             isLoading = true;
             isRevealed = false;
+            hasAwarded = false; // รีเซ็ตสิทธิ์การแจกคะแนนสำหรับข้อใหม่
             
             dom.img.style.opacity = 0; 
             dom.gridOverlay.innerHTML = ''; 
             dom.infoBox.classList.remove('revealed');
             dom.loading.classList.add('show');
-            renderPlayers(); // รีเฟรชปุ่มให้คะแนนให้หายไป
+            renderPlayers(); // รีเฟรชป้ายคะแนน
             
             if (retryCount === 0) dom.loadingText.textContent = "กำลังค้นหาตัวละครแบบสุ่ม...";
 
@@ -510,9 +506,8 @@
             retryCount = 0; 
             dom.loading.classList.remove('show');
             dom.img.style.opacity = 1; 
-            createGrid();
+            createGrid(); // สร้างแผ่นป้าย 36 ช่อง
             isLoading = false;
-            renderPlayers(); // รีเฟรชเพื่ออัปเดตคะแนนโบนัสตอนเริ่ม 36
         };
 
         dom.img.onerror = () => {
@@ -536,6 +531,7 @@
                 dom.gameDisplay.textContent = currentCharacter.game;
             }
             dom.infoBox.classList.add('revealed'); 
+            renderPlayers();
         }
 
         function createGrid() {
@@ -551,10 +547,11 @@
                 tile.addEventListener('click', function() {
                     if (isRevealed || this.style.opacity === '0' || isLoading) return;
                     this.style.opacity = '0';
+                    
+                    // ตัดป้ายออกจากระบบ และอัปเดตคะแนนโบนัสที่ลดลง
                     const index = unrevealedTiles.indexOf(this);
                     if (index > -1) unrevealedTiles.splice(index, 1);
                     
-                    // ทุกครั้งที่เปิดช่อง ให้อัปเดตตัวเลขโบนัสในบอร์ดคะแนน
                     renderPlayers();
                     checkIfAllRevealed();
                 });
@@ -562,6 +559,8 @@
                 dom.gridOverlay.appendChild(tile);
                 unrevealedTiles.push(tile);
             }
+            // รีเฟรชป้ายคะแนนรอบแรกสุดเมื่อตารางถูกสร้างเสร็จ (แสดงเลข 36)
+            renderPlayers();
         }
 
         function openRandomTile() {
@@ -581,9 +580,8 @@
         function revealAll() {
             if (isRevealed || !currentCharacter || isLoading) return;
             unrevealedTiles.forEach(tile => tile.style.opacity = '0');
-            // ห้าม clear array unrevealedTiles ก่อนคำนวณคะแนน ไม่งั้นได้ 0
+            // บั๊กแก้ไขแล้ว: ห้ามล้างค่า unrevealedTiles = [] ทิ้งที่นี่เด็ดขาด เพื่อให้คะแนนยังคงอยู่!
             revealCharacterInfo();
-            unrevealedTiles = []; 
         }
 
         function revealCharacterInfo() {
@@ -597,7 +595,7 @@
 
             dom.infoBox.classList.add('revealed');
             
-            // อัปเดตกระดานคะแนนให้โชว์ปุ่ม "ตอบถูก"
+            // สั่งให้กระดานอัปเดต เพื่อแสดงปุ่ม "+คะแนน" สำหรับให้คะแนนผู้เล่นที่ตอบถูก
             renderPlayers();
             
             if (currentCharacter && dom.img.src) {
@@ -658,9 +656,9 @@
                     revealAll();
                 } else if (e.code === 'Enter') {
                     e.preventDefault();
+                    // ถ้ายังไม่เฉลยแล้วกดข้าม (ไม่มีใครได้คะแนน)
                     if (!isRevealed && currentCharacter) {
-                        // ถ้าข้าม จะไม่ให้คะแนนใคร (คะแนนจะเป็น 0)
-                        unrevealedTiles = [];
+                        unrevealedTiles = []; // ล้างค่าโบนัสเป็น 0
                         revealCharacterInfo();
                     }
                     if (!isLoading) {
