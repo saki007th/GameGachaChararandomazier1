@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v4.1 Fixed Dynamic API</title>
+    <title>Gacha Guessing Game - v4.4 Numbered Grid</title>
     <style>
         :root {
             --bg-color: #1e272e;
@@ -91,8 +91,24 @@
             display: grid; border-radius: 8px; overflow: hidden;
         }
 
-        .grid-tile { background-color: #1e272e; border: 1px solid #485460; transition: opacity 0.3s ease; cursor: pointer; }
-        .grid-tile:hover { background-color: #2d3436; }
+        /* ตกแต่งแผ่นป้ายให้แสดงตัวเลข */
+        .grid-tile { 
+            background-color: #1e272e; 
+            border: 1px solid #485460; 
+            transition: opacity 0.3s ease, background-color 0.2s ease; 
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.25); /* สีโปร่งแสง */
+            font-size: 1.5rem;
+            font-weight: bold;
+            user-select: none; /* ห้ามคลุมดำตัวเลข */
+        }
+        .grid-tile:hover { 
+            background-color: #2d3436; 
+            color: rgba(255, 255, 255, 0.6);
+        }
 
         #loading-indicator {
             position: absolute; display: flex; flex-direction: column; justify-content: center;
@@ -144,12 +160,7 @@
         .history-info small { color: #d2dae2; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .app-version {
-            position: absolute;
-            bottom: 10px;
-            right: 15px;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.3);
-            pointer-events: none;
+            position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.3); pointer-events: none;
         }
     </style>
 </head>
@@ -199,7 +210,7 @@
         </div>
     </div>
 
-    <div class="app-version">v4.1 - Fixed Dynamic Page RNG</div>
+    <div class="app-version">v4.4 - Numbered Grid (Base 4.1)</div>
 
     <script>
         const GAME_TAGS = {
@@ -316,7 +327,6 @@
                     const gameApiTag = GAME_TAGS[randomGame];
                     const searchTags = `solo ${gameApiTag}`;
                     
-                    // จำลองการสุ่มโดยการเข้าถึงหน้า 1 ถึง 5 แบบสุ่ม (จำกัดแค่หน้า 5 เพื่อป้องกัน API ส่งค่าว่างสำหรับเกมใหม่ๆ)
                     const randomPage = Math.floor(Math.random() * 5) + 1;
                     const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
                     
@@ -325,7 +335,6 @@
 
                     const data = await response.json();
                     
-                    // กรองให้เหลือเฉพาะรูปที่มีชื่อตัวละครแนบมา และไม่ใช่วิดีโอ
                     const validPosts = data.filter(post => 
                         post.tag_string_character &&
                         (post.large_file_url || post.file_url) && 
@@ -394,6 +403,9 @@
             for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
                 const tile = document.createElement('div');
                 tile.className = 'grid-tile';
+                
+                // เพิ่มตัวเลขลงไปในป้าย (1 ถึง 36)
+                tile.textContent = i + 1;
                 
                 tile.addEventListener('click', function() {
                     if (isRevealed || this.style.opacity === '0' || isLoading) return;
