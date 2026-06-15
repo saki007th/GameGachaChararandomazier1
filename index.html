@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v4.0 Dynamic API</title>
+    <title>Gacha Guessing Game - v4.1 Fixed Dynamic API</title>
     <style>
         :root {
             --bg-color: #1e272e;
@@ -199,10 +199,9 @@
         </div>
     </div>
 
-    <div class="app-version">v4.0 - Dynamic Tag Parser</div>
+    <div class="app-version">v4.1 - Fixed Dynamic Page RNG</div>
 
     <script>
-        // ฐานข้อมูลเหลือเพียงแค่ชื่อเกม และ Tag หลักของเกมนั้นๆ เท่านั้น!
         const GAME_TAGS = {
             "Genshin Impact": "genshin_impact",
             "Honkai: Star Rail": "honkai:_star_rail",
@@ -218,7 +217,7 @@
         let unrevealedTiles = [];
         let playHistory = []; 
         let retryCount = 0;
-        const MAX_RETRIES = 10; // เพิ่มจำนวนครั้งทะลุบล็อกเพราะบางภาพอาจไม่มี Tag ตัวละคร
+        const MAX_RETRIES = 10; 
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
 
@@ -258,22 +257,14 @@
             }
         }
 
-        // ฟังก์ชันพระเอก: แปลง Tag ดิบๆ ให้เป็นชื่อคนสวยงาม
         function formatCharacterName(tagString) {
             if (!tagString) return null;
             
-            // API จะส่งมาเป็นแท็กคั่นด้วยช่องว่าง เช่น "hu_tao_(genshin_impact) zhongli" เราดึงแค่ชื่อแรกสุด
             let firstTag = tagString.split(' ')[0];
-            
-            // 1. ตัดคำในวงเล็บทิ้ง เช่น _(genshin_impact) หรือ _(swimsuit)
             firstTag = firstTag.replace(/\_\([^)]+\)/g, '');
-            // 2. ตัดวงเล็บที่ติดมาแบบแปลกๆ ทิ้ง
             firstTag = firstTag.replace(/\([^)]+\)/g, '');
             
-            // 3. เปลี่ยนเครื่องหมาย _ เป็นช่องว่าง
             let nameWithSpaces = firstTag.replace(/_/g, ' ');
-            
-            // 4. ทำตัวอักษรตัวแรกของแต่ละคำให้เป็นตัวพิมพ์ใหญ่ (Capitalize)
             return nameWithSpaces.replace(/\b\w/g, char => char.toUpperCase()).trim();
         }
 
@@ -312,7 +303,6 @@
             
             if (retryCount === 0) dom.loadingText.textContent = "กำลังค้นหาตัวละครแบบสุ่ม...";
 
-            // สุ่มเลือกว่าจะดึงจาก Local Database หรือ API (โอกาส 15% ที่จะเจอรูปที่ตั้งเอง ถ้ามีรูปในระบบ)
             const localFiltered = localCharacters.filter(char => selectedGames.includes(char.game));
             const pickFromLocal = (localFiltered.length > 0 && Math.random() < 0.15);
 
@@ -322,40 +312,43 @@
                     currentCharacter = { name: localChar.name, game: localChar.game };
                     dom.img.src = localChar.url;
                 } else {
-                    // ดึงจาก API ตามเกมที่เลือก
                     const randomGame = selectedGames[Math.floor(Math.random() * selectedGames.length)];
                     const gameApiTag = GAME_TAGS[randomGame];
-                    
-                    // ใช้ parameter random=true เพื่อให้เซิร์ฟเวอร์สุ่มรูปมาให้ 1 รูปถ้วน
                     const searchTags = `solo ${gameApiTag}`;
-                    const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=1&random=true&tags=${encodeURIComponent(searchTags)}`;
+                    
+                    // จำลองการสุ่มโดยการเข้าถึงหน้า 1 ถึง 5 แบบสุ่ม (จำกัดแค่หน้า 5 เพื่อป้องกัน API ส่งค่าว่างสำหรับเกมใหม่ๆ)
+                    const randomPage = Math.floor(Math.random() * 5) + 1;
+                    const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
                     
                     const response = await fetch(targetApiUrl);
                     if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
                     const data = await response.json();
                     
-                    if (data && data.length > 0) {
-                        const post = data[0];
+                    // กรองให้เหลือเฉพาะรูปที่มีชื่อตัวละครแนบมา และไม่ใช่วิดีโอ
+                    const validPosts = data.filter(post => 
+                        post.tag_string_character &&
+                        (post.large_file_url || post.file_url) && 
+                        !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)
+                    );
+
+                    if (validPosts.length > 0) {
+                        const randomPost = validPosts[Math.floor(Math.random() * validPosts.length)];
+                        const extractedName = formatCharacterName(randomPost.tag_string_character);
                         
-                        // ตรวจสอบว่ารูปนี้สามารถดึงชื่อตัวละครออกมาได้ไหม
-                        const extractedName = formatCharacterName(post.tag_string_character);
-                        
-                        // ถ้าไฟล์ไม่ใช่วิดีโอ และมีชื่อตัวละคร ให้แสดงผล
-                        if (extractedName && !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)) {
+                        if (extractedName) {
                             currentCharacter = { name: extractedName, game: randomGame };
-                            dom.img.src = post.large_file_url || post.file_url;
+                            dom.img.src = randomPost.large_file_url || randomPost.file_url;
                         } else {
-                            // ถ้ารูปนั้นเป็นวิวเฉยๆ หรือไม่มีชื่อตัวละครกำกับ ให้สุ่มใหม่ (Retry) ทันที
-                            throw new Error("รูปนี้ไม่มีข้อมูลชื่อตัวละครอ้างอิง");
+                            throw new Error("สกัดชื่อตัวละครไม่สำเร็จ");
                         }
                     } else {
-                        throw new Error("ไม่มีภาพ หรือเซิร์ฟเวอร์โหลดไม่ทัน");
+                        throw new Error("ไม่พบภาพที่ใช้งานได้ในหน้านี้");
                     }
                 }
             } catch (error) {
                 console.warn("Fetch Error (Retrying):", error.message);
-                handleAutoRetry(`ภาพไม่มีคำตอบ หรือไฟล์เสีย`);
+                handleAutoRetry(`ภาพไม่มีคำตอบ หรือถูกบล็อกการเชื่อมต่อ`);
             }
         }
 
