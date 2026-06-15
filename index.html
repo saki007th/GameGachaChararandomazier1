@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v5.0 Typing & Timer Control</title>
+    <title>Gacha Guessing Game - v5.1 Locked Tiles Mode</title>
     <style>
         :root {
             --bg-color: #1e272e;
@@ -102,18 +102,13 @@
             width: 100%; max-width: 800px; padding: 20px; flex: 1; justify-content: center;
         }
 
-        /* ป้ายแสดงโบนัส และจับเวลา */
         .status-badges { display: flex; gap: 15px; margin-bottom: 20px; }
         .round-bonus-badge, .timer-badge {
             padding: 8px 25px; border-radius: 20px; font-size: 1.2rem; font-weight: bold;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: inline-block; transition: all 0.3s ease;
         }
-        .round-bonus-badge {
-            background: rgba(254, 211, 48, 0.15); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.3);
-        }
-        .timer-badge {
-            background: rgba(255, 255, 255, 0.04); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.2);
-        }
+        .round-bonus-badge { background: rgba(254, 211, 48, 0.15); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.3); }
+        .timer-badge { background: rgba(255, 255, 255, 0.04); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.2); }
 
         #image-wrapper {
             position: relative; display: inline-flex; justify-content: center; align-items: center;
@@ -131,12 +126,38 @@
             display: grid; border-radius: 8px; overflow: hidden;
         }
 
+        /* ====================
+           Grid & Locked Tiles CSS
+           ==================== */
         .grid-tile { 
-            background-color: #1e272e; border: 1px solid #485460; transition: opacity 0.3s ease, background-color 0.2s ease; 
+            background-color: #1e272e; border: 1px solid #485460; transition: opacity 0.3s ease, background-color 0.2s ease, border-color 0.2s ease; 
             cursor: pointer; display: flex; justify-content: center; align-items: center;
-            color: rgba(255, 255, 255, 0.25); font-size: 1.5rem; font-weight: bold; user-select: none; 
+            color: rgba(255, 255, 255, 0.25); font-size: 1.5rem; font-weight: bold; user-select: none; position: relative;
         }
         .grid-tile:hover { background-color: #2d3436; color: rgba(255, 255, 255, 0.6); }
+        
+        /* สไตล์สำหรับป้ายที่โดนล็อก */
+        .grid-tile.locked {
+            background-color: rgba(252, 92, 101, 0.05);
+            color: transparent; /* ซ่อนตัวเลขชั่วคราว */
+        }
+        .grid-tile.locked::after {
+            content: "🔒";
+            position: absolute;
+            font-size: 1.5rem;
+            color: var(--danger-color);
+            opacity: 0.7;
+        }
+        .grid-tile.locked:hover::after { opacity: 1; transform: scale(1.1); transition: 0.2s; }
+
+        /* แอนิเมชันสั่นเมื่อกดป้ายที่ล็อกอยู่ */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: var(--danger-color) !important; background-color: rgba(252, 92, 101, 0.2) !important; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+            40%, 60% { transform: translate3d(5px, 0, 0); }
+        }
 
         #loading-indicator {
             position: absolute; display: flex; flex-direction: column; justify-content: center;
@@ -150,22 +171,15 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* ====================
-           Guessing System UI
-           ==================== */
-        .guessing-section {
-            margin-top: 20px; display: flex; gap: 10px; width: 100%; max-width: 400px;
-            align-items: center; flex-direction: column;
-        }
+        /* Guessing System UI */
+        .guessing-section { margin-top: 20px; display: flex; gap: 10px; width: 100%; max-width: 400px; align-items: center; flex-direction: column; }
         .guessing-input-group { display: flex; gap: 10px; width: 100%; }
         .guessing-input-group input {
-            flex: 1; padding: 12px 15px; border-radius: 8px; border: 2px solid #485460;
-            background: rgba(0,0,0,0.3); color: white; font-size: 1.1rem; outline: none; text-align: center;
+            flex: 1; padding: 12px 15px; border-radius: 8px; border: 2px solid #485460; background: rgba(0,0,0,0.3); color: white; font-size: 1.1rem; outline: none; text-align: center;
         }
         .guessing-input-group input:focus { border-color: var(--primary-color); }
         .guessing-input-group button {
-            background: var(--primary-color); border: none; color: white; padding: 0 20px;
-            border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+            background: var(--primary-color); border: none; color: white; padding: 0 20px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
         }
         .guessing-input-group button:hover { background: #0c9c95; }
         .guess-feedback { font-weight: bold; font-size: 1.1rem; height: 25px; transition: 0.2s; }
@@ -175,12 +189,10 @@
         #char-name { font-size: 2.5rem; margin-bottom: 5px; color: var(--primary-color); text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
         #char-game { font-size: 1.2rem; color: #d2dae2; }
 
-        .controls-hint {
-            margin-top: 10px; padding: 10px 20px; background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px; color: #808e9b; font-size: 0.9rem; letter-spacing: 0.5px;
-        }
+        .controls-hint { margin-top: 10px; padding: 10px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; color: #808e9b; font-size: 0.9rem; letter-spacing: 0.5px; }
         kbd { background-color: #485460; padding: 3px 8px; border-radius: 4px; color: white; font-family: monospace; }
 
+        /* History Modal */
         #history-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85);
             display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
@@ -240,7 +252,6 @@
     </div>
 
     <div id="game-container">
-        
         <div class="status-badges">
             <div class="round-bonus-badge">
                 🏆 โบนัส: <span id="round-bonus-display">36</span>
@@ -285,7 +296,7 @@
         </div>
     </div>
 
-    <div class="app-version">v5.0 - Typing Check & Timer Control</div>
+    <div class="app-version">v5.1 - Locked Tiles Mechanic</div>
 
     <script>
         const GAME_TAGS = {
@@ -311,6 +322,10 @@
         let timerInterval = null;
         let timeLeft = 15;
 
+        // ตัวแปรสำหรับระบบล็อกแผ่นป้าย
+        const UNLOCK_THRESHOLD = 12; // ต้องเปิด 12 ป้ายก่อน กุญแจถึงจะหลุด
+        const LOCKED_COUNT = 6; // จำนวนป้ายที่จะถูกล็อก
+
         const MAX_RETRIES = 10; 
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
@@ -333,8 +348,6 @@
             roundBonusDisplay: document.getElementById('round-bonus-display'),
             timerDisplay: document.getElementById('timer-display'),
             toggleTimer: document.getElementById('toggle-timer'),
-            
-            // Guessing DOM
             guessingSection: document.getElementById('guessing-section'),
             guessInput: document.getElementById('guess-input'),
             guessFeedback: document.getElementById('guess-feedback')
@@ -356,20 +369,16 @@
         }
 
         // ==========================================
-        // ระบบตรวจคำตอบด้วยความคล้ายคลึง (Levenshtein + Substring)
+        // ระบบตรวจคำตอบ
         // ==========================================
         function checkAnswerSimilarity(guess, actual) {
-            // ลบช่องว่างและอักขระพิเศษออกให้หมดก่อนเทียบ
             let a = actual.toLowerCase().replace(/[^a-z0-9]/g, '');
             let b = guess.toLowerCase().replace(/[^a-z0-9]/g, '');
-            
             if (b.length === 0) return false;
             
-            // กฎข้อ 1: อนุโลมการพิมพ์คำสั้นที่ถูกเผง (เช่น พิมพ์ Raiden ในคำว่า Raiden Shogun)
             if (a.includes(b) && b.length >= 4) return true;
             if (b.includes(a) && a.length >= 4) return true;
             
-            // กฎข้อ 2: ตรวจความผิดพลาดจากการพิมพ์ (Typo) ให้ผ่านถ้าเหมือนเกิน 70%
             let matrix = [];
             for(let i = 0; i <= b.length; i++){ matrix[i] = [i]; }
             for(let j = 0; j <= a.length; j++){ matrix[0][j] = j; }
@@ -385,29 +394,23 @@
             }
             let distance = matrix[b.length][a.length];
             let similarityPercentage = (1 - distance / Math.max(a.length, b.length)) * 100;
-            
             return similarityPercentage >= 70;
         }
 
         window.submitGuess = function() {
             if (isRevealed || !currentCharacter) return;
-            
             const guess = dom.guessInput.value.trim();
             if(!guess) return;
 
             const isCorrect = checkAnswerSimilarity(guess, currentCharacter.name);
             
             if(isCorrect) {
-                // แจกคะแนนให้ Active Player ทันที ถ้ามี
                 dom.guessFeedback.textContent = "✅ ถูกต้องยอดเยี่ยม!";
                 dom.guessFeedback.style.color = "var(--success-color)";
                 
                 const currentBonus = unrevealedTiles.length > 0 ? unrevealedTiles.length : 36;
-                if(activePlayerId && !hasAwarded) {
-                    awardPoints(activePlayerId, currentBonus);
-                }
+                if(activePlayerId && !hasAwarded) awardPoints(activePlayerId, currentBonus);
                 
-                // เฉลยภาพ
                 unrevealedTiles.forEach(tile => tile.style.opacity = '0');
                 revealCharacterInfo();
             } else {
@@ -416,7 +419,6 @@
                 dom.guessInput.value = '';
                 dom.guessInput.focus();
                 
-                // สั่นกล่องข้อความ
                 dom.guessFeedback.style.transform = "translateX(-10px)";
                 setTimeout(() => dom.guessFeedback.style.transform = "translateX(10px)", 100);
                 setTimeout(() => dom.guessFeedback.style.transform = "translateX(0)", 200);
@@ -426,10 +428,8 @@
         // --- ระบบควบคุมจับเวลา ---
         function startTimer() {
             if (isRevealed || isLoading) return;
-            
             clearInterval(timerInterval);
             
-            // เช็คช่องว่าปิดจับเวลาอยู่หรือไม่
             if (!dom.toggleTimer.checked) {
                 dom.timerDisplay.style.display = 'none';
                 return;
@@ -469,8 +469,8 @@
             dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
             dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.04)";
         }
-        // ---------------------------------
 
+        // --- Scoreboard ---
         function savePlayers() { localStorage.setItem('gachaPlayers', JSON.stringify(players)); }
 
         function renderPlayers() {
@@ -544,6 +544,7 @@
             }
         };
 
+        // --- Core ---
         function loadLocalData() {
             const rawData = localStorage.getItem('gachaGameData');
             if (rawData) localCharacters = JSON.parse(rawData);
@@ -585,10 +586,9 @@
             isRevealed = false;
             hasAwarded = false; 
             
-            // รีเซ็ต UI การพิมพ์
             dom.guessInput.value = '';
             dom.guessFeedback.textContent = '';
-            dom.guessingSection.style.display = 'flex'; // แสดงช่องให้ตอบ
+            dom.guessingSection.style.display = 'flex'; 
             
             dom.img.style.opacity = 0; 
             dom.gridOverlay.innerHTML = ''; 
@@ -677,23 +677,66 @@
             renderPlayers();
         }
 
+        // ==========================================
+        // ระบบ Locked Grid
+        // ==========================================
         function createGrid() {
             dom.gridOverlay.innerHTML = '';
             dom.gridOverlay.style.gridTemplateColumns = `repeat(${GRID_COLS}, 1fr)`;
             dom.gridOverlay.style.gridTemplateRows = `repeat(${GRID_ROWS}, 1fr)`;
             unrevealedTiles = [];
             
-            for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
+            // สุ่มตำแหน่งป้ายที่จะถูกล็อก 6 แผ่น
+            const totalTilesCount = GRID_ROWS * GRID_COLS;
+            const indices = Array.from({length: totalTilesCount}, (_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            const lockedIndices = indices.slice(0, LOCKED_COUNT);
+            
+            for (let i = 0; i < totalTilesCount; i++) {
                 const tile = document.createElement('div');
                 tile.className = 'grid-tile';
                 tile.textContent = i + 1;
                 
+                // ตรวจสอบว่าเป็นป้ายล็อกหรือไม่
+                if (lockedIndices.includes(i)) {
+                    tile.classList.add('locked');
+                    tile.dataset.isLocked = "true"; // เก็บสถานะลง dataset
+                } else {
+                    tile.dataset.isLocked = "false";
+                }
+                
                 tile.addEventListener('click', function() {
                     if (isRevealed || this.style.opacity === '0' || isLoading) return;
+                    
+                    // เช็คเงื่อนไขการเปิดป้ายล็อก
+                    if (this.dataset.isLocked === "true") {
+                        const openedCount = totalTilesCount - unrevealedTiles.length;
+                        if (openedCount < UNLOCK_THRESHOLD) {
+                            // ปฏิเสธการคลิก และเล่นแอนิเมชันสั่น
+                            this.classList.remove('shake');
+                            void this.offsetWidth; // trigger reflow
+                            this.classList.add('shake');
+                            
+                            // แจ้งเตือน
+                            dom.guessFeedback.textContent = `🔒 ต้องเปิดป้ายปกติอีก ${UNLOCK_THRESHOLD - openedCount} แผ่น เพื่อปลดล็อก!`;
+                            dom.guessFeedback.style.color = "var(--edit-color)";
+                            return; 
+                        } else {
+                            // อนุญาตให้เปิด (ปลดล็อกแล้ว)
+                            this.classList.remove('locked');
+                            this.dataset.isLocked = "false";
+                        }
+                    }
+
                     this.style.opacity = '0';
                     const index = unrevealedTiles.indexOf(this);
                     if (index > -1) unrevealedTiles.splice(index, 1);
                     
+                    // อัปเดต UI หากปลดล็อกป้ายที่เหลือสำเร็จ
+                    updateLockedTilesVisuals();
                     renderPlayers();
                     startTimer();
                     checkIfAllRevealed();
@@ -705,13 +748,51 @@
             renderPlayers();
         }
 
+        // ฟังก์ชันช่วยอัปเดตกราฟิกป้ายล็อกอัตโนมัติเมื่อครบกำหนด
+        function updateLockedTilesVisuals() {
+            const totalTilesCount = GRID_ROWS * GRID_COLS;
+            const openedCount = totalTilesCount - unrevealedTiles.length;
+            if (openedCount >= UNLOCK_THRESHOLD) {
+                unrevealedTiles.forEach(tile => {
+                    if (tile.dataset.isLocked === "true") {
+                        tile.classList.remove('locked');
+                        tile.dataset.isLocked = "false";
+                    }
+                });
+                // แจ้งเตือนแค่รอบเดียวเมื่อปลดล็อกสำเร็จ
+                if (openedCount === UNLOCK_THRESHOLD && !isRevealed) {
+                    dom.guessFeedback.textContent = "🔓 ปลดล็อกแผ่นป้ายพิเศษแล้ว!";
+                    dom.guessFeedback.style.color = "var(--success-color)";
+                    setTimeout(() => {
+                        if(dom.guessFeedback.textContent.includes("ปลดล็อก")) dom.guessFeedback.textContent = "";
+                    }, 3000);
+                }
+            }
+        }
+
         function openRandomTile() {
             if (isRevealed || unrevealedTiles.length === 0 || isLoading) return;
-            const randomIndex = Math.floor(Math.random() * unrevealedTiles.length);
-            const tile = unrevealedTiles[randomIndex];
-            tile.style.opacity = '0';
-            unrevealedTiles.splice(randomIndex, 1);
             
+            // ป้องกัน Spacebar สุ่มไปโดนป้ายล็อกที่ยังไม่ถึงเวลา
+            const totalTilesCount = GRID_ROWS * GRID_COLS;
+            const openedCount = totalTilesCount - unrevealedTiles.length;
+            
+            // กรองเอาเฉพาะป้ายที่เปิดได้ (ป้ายปกติ หรือ ป้ายล็อกที่ถึงเกณฑ์แล้ว)
+            const availableTiles = unrevealedTiles.filter(tile => 
+                tile.dataset.isLocked === "false" || openedCount >= UNLOCK_THRESHOLD
+            );
+            
+            if (availableTiles.length === 0) return; // กัน Error กรณีผิดพลาดทางตัวเลข
+            
+            const randomIndex = Math.floor(Math.random() * availableTiles.length);
+            const tileToOpen = availableTiles[randomIndex];
+            
+            tileToOpen.style.opacity = '0';
+            
+            const realIndex = unrevealedTiles.indexOf(tileToOpen);
+            if (realIndex > -1) unrevealedTiles.splice(realIndex, 1);
+            
+            updateLockedTilesVisuals();
             renderPlayers();
             startTimer(); 
             checkIfAllRevealed();
@@ -734,7 +815,6 @@
             clearInterval(timerInterval);
             if(dom.toggleTimer.checked) dom.timerDisplay.textContent = "🏁 เฉลยแล้ว!";
             
-            // ซ่อนกล่องให้พิมพ์
             dom.guessingSection.style.display = 'none';
             
             if (currentCharacter) {
@@ -782,13 +862,11 @@
             dom.btnHistory.addEventListener('click', openHistoryModal);
             dom.closeHistoryBtn.addEventListener('click', closeHistoryModal);
 
-            // ดัก Enter ที่ช่องพิมพ์ตอบ ให้เช็คคำตอบ
             dom.guessInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') submitGuess();
             });
 
             document.addEventListener('keydown', (e) => {
-                // ถ้าพิมพ์อยู่ใน input ไม่ต้องไปรบกวน Shortcut คีย์บอร์ด
                 if (document.activeElement.tagName === 'INPUT') return;
                 if (dom.historyModal.classList.contains('show')) return; 
 
