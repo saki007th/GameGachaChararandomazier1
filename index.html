@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v4.1 Fixed Dynamic API</title>
+    <title>Gacha Guessing Game - v4.2 Party Mode</title>
     <style>
         :root {
             --bg-color: #1e272e;
             --text-color: #ffffff;
             --primary-color: #0fb9b1;
             --danger-color: #fc5c65;
+            --success-color: #20bf6b;
+            --edit-color: #fed330;
             --panel-bg: #2d3436;
         }
 
@@ -27,45 +29,95 @@
             position: relative;
         }
 
-        .top-menu {
+        /* ====================
+           Scoreboard System
+           ==================== */
+        .scoreboard-container {
             position: absolute;
             top: 20px;
-            right: 20px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
+            left: 20px;
+            background: rgba(45, 52, 54, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            width: 260px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 100;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(5px);
+        }
+        .scoreboard-header {
+            margin-bottom: 10px; font-size: 1.1rem; color: var(--primary-color);
+            border-bottom: 1px solid #485460; padding-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .player-list {
+            flex: 1; overflow-y: auto; list-style: none; margin-bottom: 10px;
+        }
+        .player-list::-webkit-scrollbar { width: 4px; }
+        .player-list::-webkit-scrollbar-thumb { background: #485460; border-radius: 2px; }
+        
+        .player-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #1e272e; padding: 8px 10px; margin-bottom: 8px;
+            border-radius: 6px; cursor: pointer; border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .player-item:hover { background: #353b48; }
+        .player-item.active {
+            border-left-color: var(--primary-color);
+            background: rgba(15, 185, 177, 0.15);
+        }
+        .player-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; }
+        .player-score { font-weight: bold; color: var(--edit-color); font-size: 1.1rem; margin-left: 10px; }
+        
+        .add-player-box { display: flex; gap: 5px; }
+        .add-player-box input {
+            flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #485460;
+            background: #1e272e; color: white; width: 100%; outline: none;
+        }
+        .add-player-box input:focus { border-color: var(--primary-color); }
+        .add-player-box button {
+            background: var(--primary-color); border: none; color: white;
+            padding: 0 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+
+        /* ปุ่มให้คะแนน (ซ่อนไว้ โชว์ตอนเฉลย) */
+        .award-btn {
+            background: var(--success-color); border: none; color: white;
+            padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;
+            cursor: pointer; display: none; font-weight: bold;
+            animation: popIn 0.3s ease;
+        }
+        .award-btn:hover { opacity: 0.8; }
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        
+        .player-item.can-award .award-btn { display: block; }
+        .player-item.can-award .player-score { display: none; }
+        .player-item.can-award .delete-btn { display: none; }
+
+        .delete-btn { background: none; border: none; color: #fc5c65; cursor: pointer; margin-left: 8px; font-size: 1.1rem; opacity: 0.5; }
+        .delete-btn:hover { opacity: 1; }
+
+        .top-menu {
+            position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; align-items: center; z-index: 100;
         }
 
         .btn-menu {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-color);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 9px 15px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1); color: var(--text-color); border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 9px 15px; border-radius: 6px; text-decoration: none; font-size: 0.95rem; transition: all 0.2s; cursor: pointer;
         }
         .btn-menu:hover { background: rgba(255, 255, 255, 0.2); }
 
         .game-filter-container {
-            margin-top: 30px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 10;
+            margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;
+            background: rgba(255, 255, 255, 0.05); padding: 12px 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); z-index: 10;
         }
 
         .filter-label {
-            display: flex; align-items: center; gap: 8px; color: #d2dae2; cursor: pointer;
-            font-size: 0.95rem; user-select: none; transition: color 0.2s;
+            display: flex; align-items: center; gap: 8px; color: #d2dae2; cursor: pointer; font-size: 0.95rem; user-select: none; transition: color 0.2s;
         }
         .filter-label:hover { color: var(--text-color); }
         .filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary-color); width: 16px; height: 16px; }
@@ -144,16 +196,24 @@
         .history-info small { color: #d2dae2; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .app-version {
-            position: absolute;
-            bottom: 10px;
-            right: 15px;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.3);
-            pointer-events: none;
+            position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.3); pointer-events: none;
         }
     </style>
 </head>
 <body>
+
+    <div class="scoreboard-container">
+        <div class="scoreboard-header">
+            <span>👥 ผู้เล่น & คะแนน</span>
+            <button style="background:none; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem;" onclick="resetScores()">รีเซ็ต</button>
+        </div>
+        <ul class="player-list" id="players-list">
+            </ul>
+        <div class="add-player-box">
+            <input type="text" id="new-player-name" placeholder="เพิ่มชื่อผู้เล่น..." onkeypress="if(event.key === 'Enter') addPlayer()">
+            <button onclick="addPlayer()">+</button>
+        </div>
+    </div>
 
     <div class="top-menu">
         <button id="btn-history" class="btn-menu">🕒 ประวัติการทาย</button>
@@ -185,7 +245,7 @@
         </div>
 
         <div class="controls-hint">
-            <kbd>คลิก</kbd> หรือ <kbd>Space</kbd> เปิดทีละช่อง&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>R</kbd> เฉลยทันที&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Enter</kbd> สุ่มตัวถัดไป
+            <kbd>คลิกป้าย</kbd> ให้ผู้เล่นที่เลือกเปิดช่อง&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>R</kbd> เฉลย/ให้คะแนน&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Enter</kbd> สุ่มตัวถัดไป
         </div>
     </div>
 
@@ -199,7 +259,7 @@
         </div>
     </div>
 
-    <div class="app-version">v4.1 - Fixed Dynamic Page RNG</div>
+    <div class="app-version">v4.2 - Party Mode (Score System)</div>
 
     <script>
         const GAME_TAGS = {
@@ -217,6 +277,11 @@
         let unrevealedTiles = [];
         let playHistory = []; 
         let retryCount = 0;
+        
+        // ระบบผู้เล่น
+        let players = JSON.parse(localStorage.getItem('gachaPlayers')) || [];
+        let activePlayerId = null;
+
         const MAX_RETRIES = 10; 
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
@@ -233,20 +298,113 @@
             btnHistory: document.getElementById('btn-history'),
             historyModal: document.getElementById('history-modal'),
             closeHistoryBtn: document.getElementById('close-history-btn'),
-            historyList: document.getElementById('history-list')
+            historyList: document.getElementById('history-list'),
+            playersList: document.getElementById('players-list'),
+            newPlayerInput: document.getElementById('new-player-name')
         };
 
         function init() {
             loadLocalData();
             setupEventListeners();
+            renderPlayers();
             loadRandomCharacter();
 
             window.addEventListener('storage', (e) => {
-                if (e.key === 'gachaGameData') {
-                    loadLocalData();
+                if (e.key === 'gachaGameData') loadLocalData();
+                if (e.key === 'gachaPlayers') {
+                    players = JSON.parse(localStorage.getItem('gachaPlayers')) || [];
+                    renderPlayers();
                 }
             });
         }
+
+        // --- ระบบ Scoreboard ---
+        function savePlayers() {
+            localStorage.setItem('gachaPlayers', JSON.stringify(players));
+        }
+
+        function renderPlayers() {
+            dom.playersList.innerHTML = '';
+            
+            // คำนวณคะแนนโบนัส ณ ปัจจุบัน (จำนวนแผ่นป้ายที่ยังไม่ได้เปิด)
+            const currentBonus = unrevealedTiles ? unrevealedTiles.length : 0;
+            const isAwardPhase = isRevealed && !isLoading && currentCharacter;
+
+            // เรียงลำดับคนคะแนนเยอะสุดขึ้นบน
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+
+            if(sortedPlayers.length === 0) {
+                dom.playersList.innerHTML = '<li style="text-align:center; color:#808e9b; font-size:0.85rem; padding:10px;">เพิ่มชื่อผู้เล่นด้านล่าง</li>';
+                return;
+            }
+
+            sortedPlayers.forEach(p => {
+                const li = document.createElement('li');
+                li.className = `player-item ${p.id === activePlayerId ? 'active' : ''} ${isAwardPhase ? 'can-award' : ''}`;
+                
+                // คลิกเพื่อตั้งให้เป็นผู้เล่นปัจจุบัน (คนที่กำลังจะกดเปิดแผ่นป้าย)
+                li.onclick = (e) => {
+                    if(!e.target.classList.contains('award-btn') && !e.target.classList.contains('delete-btn')) {
+                        activePlayerId = p.id;
+                        renderPlayers();
+                    }
+                };
+
+                li.innerHTML = `
+                    <span class="player-name">${p.name}</span>
+                    <span class="player-score">${p.score}</span>
+                    <button class="award-btn" onclick="awardPoints('${p.id}', ${currentBonus}); event.stopPropagation();">
+                        ตอบถูก! +${currentBonus}
+                    </button>
+                    <button class="delete-btn" onclick="removePlayer('${p.id}'); event.stopPropagation();" title="ลบผู้เล่น">×</button>
+                `;
+                dom.playersList.appendChild(li);
+            });
+        }
+
+        window.addPlayer = function() {
+            const name = dom.newPlayerInput.value.trim();
+            if(name) {
+                players.push({ id: Date.now().toString(), name: name, score: 0 });
+                savePlayers();
+                dom.newPlayerInput.value = '';
+                // ถ้ามีคนเดียว ให้เซ็ตเป็น active เลย
+                if(players.length === 1) activePlayerId = players[0].id;
+                renderPlayers();
+            }
+        };
+
+        window.removePlayer = function(id) {
+            if(confirm('ต้องการลบผู้เล่นนี้ใช่หรือไม่?')) {
+                players = players.filter(p => p.id !== id);
+                if(activePlayerId === id) activePlayerId = players.length > 0 ? players[0].id : null;
+                savePlayers();
+                renderPlayers();
+            }
+        };
+
+        window.resetScores = function() {
+            if(confirm('ต้องการรีเซ็ตคะแนนทุกคนเป็น 0 ใช่หรือไม่?')) {
+                players.forEach(p => p.score = 0);
+                savePlayers();
+                renderPlayers();
+            }
+        };
+
+        window.awardPoints = function(id, points) {
+            const player = players.find(p => p.id === id);
+            if(player) {
+                player.score += points;
+                savePlayers();
+                renderPlayers();
+                
+                // เอฟเฟกต์พลุเบาๆ (จำลองด้วย Alert หรือเริ่มรอบใหม่เลย)
+                setTimeout(() => {
+                    loadRandomCharacter();
+                }, 400);
+            }
+        };
+        // -------------------------
 
         function loadLocalData() {
             const rawData = localStorage.getItem('gachaGameData');
@@ -259,11 +417,9 @@
 
         function formatCharacterName(tagString) {
             if (!tagString) return null;
-            
             let firstTag = tagString.split(' ')[0];
             firstTag = firstTag.replace(/\_\([^)]+\)/g, '');
             firstTag = firstTag.replace(/\([^)]+\)/g, '');
-            
             let nameWithSpaces = firstTag.replace(/_/g, ' ');
             return nameWithSpaces.replace(/\b\w/g, char => char.toUpperCase()).trim();
         }
@@ -284,9 +440,7 @@
         async function loadRandomCharacter() {
             if (isLoading) return;
 
-            const selectedGames = Array.from(dom.filterCheckboxes)
-                                       .filter(cb => cb.checked)
-                                       .map(cb => cb.value);
+            const selectedGames = Array.from(dom.filterCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
             
             if (selectedGames.length === 0) {
                 alert("กรุณาเลือกเกมอย่างน้อย 1 เกมครับ!");
@@ -300,6 +454,7 @@
             dom.gridOverlay.innerHTML = ''; 
             dom.infoBox.classList.remove('revealed');
             dom.loading.classList.add('show');
+            renderPlayers(); // รีเฟรชปุ่มให้คะแนนให้หายไป
             
             if (retryCount === 0) dom.loadingText.textContent = "กำลังค้นหาตัวละครแบบสุ่ม...";
 
@@ -316,7 +471,6 @@
                     const gameApiTag = GAME_TAGS[randomGame];
                     const searchTags = `solo ${gameApiTag}`;
                     
-                    // จำลองการสุ่มโดยการเข้าถึงหน้า 1 ถึง 5 แบบสุ่ม (จำกัดแค่หน้า 5 เพื่อป้องกัน API ส่งค่าว่างสำหรับเกมใหม่ๆ)
                     const randomPage = Math.floor(Math.random() * 5) + 1;
                     const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
                     
@@ -325,7 +479,6 @@
 
                     const data = await response.json();
                     
-                    // กรองให้เหลือเฉพาะรูปที่มีชื่อตัวละครแนบมา และไม่ใช่วิดีโอ
                     const validPosts = data.filter(post => 
                         post.tag_string_character &&
                         (post.large_file_url || post.file_url) && 
@@ -359,6 +512,7 @@
             dom.img.style.opacity = 1; 
             createGrid();
             isLoading = false;
+            renderPlayers(); // รีเฟรชเพื่ออัปเดตคะแนนโบนัสตอนเริ่ม 36
         };
 
         dom.img.onerror = () => {
@@ -374,10 +528,9 @@
                     <span style="font-size: 3rem; margin-bottom: 10px;">⚠️</span>
                     <strong style="font-size: 1.2rem;">ข้อผิดพลาด</strong>
                     <p style="font-size: 0.9rem; margin-top: 5px; color: #d2dae2;">${message}</p>
-                    <small style="margin-top: 15px;">กด Enter เพื่อสั่งสุ่มใหม่ด้วยตัวเอง</small>
+                    <small style="margin-top: 15px;">กด Enter เพื่อสั่งสุ่มใหม่</small>
                 </div>
             `;
-            
             if (currentCharacter) {
                 dom.nameDisplay.textContent = currentCharacter.name;
                 dom.gameDisplay.textContent = currentCharacter.game;
@@ -400,6 +553,9 @@
                     this.style.opacity = '0';
                     const index = unrevealedTiles.indexOf(this);
                     if (index > -1) unrevealedTiles.splice(index, 1);
+                    
+                    // ทุกครั้งที่เปิดช่อง ให้อัปเดตตัวเลขโบนัสในบอร์ดคะแนน
+                    renderPlayers();
                     checkIfAllRevealed();
                 });
                 
@@ -414,6 +570,7 @@
             const tile = unrevealedTiles[randomIndex];
             tile.style.opacity = '0';
             unrevealedTiles.splice(randomIndex, 1);
+            renderPlayers();
             checkIfAllRevealed();
         }
 
@@ -424,8 +581,9 @@
         function revealAll() {
             if (isRevealed || !currentCharacter || isLoading) return;
             unrevealedTiles.forEach(tile => tile.style.opacity = '0');
-            unrevealedTiles = [];
+            // ห้าม clear array unrevealedTiles ก่อนคำนวณคะแนน ไม่งั้นได้ 0
             revealCharacterInfo();
+            unrevealedTiles = []; 
         }
 
         function revealCharacterInfo() {
@@ -438,6 +596,9 @@
             }
 
             dom.infoBox.classList.add('revealed');
+            
+            // อัปเดตกระดานคะแนนให้โชว์ปุ่ม "ตอบถูก"
+            renderPlayers();
             
             if (currentCharacter && dom.img.src) {
                 if (playHistory.length === 0 || playHistory[0].url !== dom.img.src) {
@@ -455,7 +616,7 @@
             if (playHistory.length === 0) {
                 dom.historyList.innerHTML = '<li style="text-align:center; color:#808e9b; padding:20px;">ยังไม่มีประวัติการทายในรอบนี้</li>';
             } else {
-                playHistory.forEach((item, index) => {
+                playHistory.forEach((item) => {
                     const li = document.createElement('li');
                     li.className = 'history-item';
                     li.innerHTML = `
@@ -478,15 +639,15 @@
 
         function setupEventListeners() {
             dom.filterCheckboxes.forEach(cb => {
-                cb.addEventListener('change', function() {
-                    this.blur();
-                });
+                cb.addEventListener('change', function() { this.blur(); });
             });
 
             dom.btnHistory.addEventListener('click', openHistoryModal);
             dom.closeHistoryBtn.addEventListener('click', closeHistoryModal);
 
             document.addEventListener('keydown', (e) => {
+                // ข้ามคีย์บอร์ดถ้าพิมพ์ชื่ออยู่
+                if (document.activeElement.tagName === 'INPUT') return;
                 if (dom.historyModal.classList.contains('show')) return; 
 
                 if (e.code === 'Space') {
@@ -498,6 +659,8 @@
                 } else if (e.code === 'Enter') {
                     e.preventDefault();
                     if (!isRevealed && currentCharacter) {
+                        // ถ้าข้าม จะไม่ให้คะแนนใคร (คะแนนจะเป็น 0)
+                        unrevealedTiles = [];
                         revealCharacterInfo();
                     }
                     if (!isLoading) {
