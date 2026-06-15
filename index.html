@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - Direct API</title>
+    <title>Gacha Guessing Game - Direct API with History</title>
     <style>
         :root {
             --bg-color: #1e272e;
@@ -37,7 +37,7 @@
             z-index: 100;
         }
 
-        #admin-link {
+        .btn-menu {
             background: rgba(255, 255, 255, 0.1);
             color: var(--text-color);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -46,8 +46,9 @@
             text-decoration: none;
             font-size: 0.95rem;
             transition: all 0.2s;
+            cursor: pointer;
         }
-        #admin-link:hover { background: rgba(255, 255, 255, 0.2); }
+        .btn-menu:hover { background: rgba(255, 255, 255, 0.2); }
 
         .game-filter-container {
             margin-top: 30px;
@@ -187,12 +188,69 @@
             color: white;
             font-family: monospace;
         }
+
+        /* ==================== 
+           CSS: History Modal
+           ==================== */
+        #history-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #history-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: var(--panel-bg);
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #485460; padding-bottom: 15px;
+        }
+        .close-btn {
+            background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1;
+        }
+        .close-btn:hover { color: white; }
+        .history-list {
+            flex: 1; overflow-y: auto; list-style: none;
+        }
+        .history-list::-webkit-scrollbar { width: 6px; }
+        .history-list::-webkit-scrollbar-thumb { background: #485460; border-radius: 3px; }
+        
+        .history-item {
+            display: flex; align-items: center; gap: 15px;
+            background: #1e272e; padding: 10px; margin-bottom: 10px;
+            border-radius: 8px; border-left: 4px solid var(--primary-color);
+        }
+        .history-img {
+            width: 60px; height: 60px; border-radius: 4px; object-fit: cover; background: #000;
+        }
+        .history-info { display: flex; flex-direction: column; overflow: hidden; }
+        .history-info strong { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary-color); }
+        .history-info small { color: #d2dae2; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     </style>
 </head>
 <body>
 
     <div class="top-menu">
-        <a href="admin.html" id="admin-link">⚙️ จัดการข้อมูลส่วนตัว (Local)</a>
+        <button id="btn-history" class="btn-menu">🕒 ประวัติการทาย</button>
+        <a href="admin.html" id="admin-link" class="btn-menu">⚙️ จัดการข้อมูล (Local)</a>
     </div>
 
     <div class="game-filter-container" id="game-filters">
@@ -221,6 +279,17 @@
 
         <div class="controls-hint">
             <kbd>คลิก</kbd> หรือ <kbd>Space</kbd> เปิดทีละช่อง&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>R</kbd> เฉลยทันที&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Enter</kbd> สุ่มตัวถัดไป
+        </div>
+    </div>
+
+    <div id="history-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🕒 ประวัติการทาย (รอบนี้)</h2>
+                <button class="close-btn" id="close-history-btn">&times;</button>
+            </div>
+            <ul class="history-list" id="history-list">
+                </ul>
         </div>
     </div>
 
@@ -261,6 +330,8 @@
         let isRevealed = false;
         let isLoading = false;
         let unrevealedTiles = [];
+        let playHistory = []; // ตัวแปรเก็บประวัติการทาย
+        
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
 
@@ -271,7 +342,13 @@
             nameDisplay: document.getElementById('char-name'),
             gameDisplay: document.getElementById('char-game'),
             loading: document.getElementById('loading-indicator'),
-            filterCheckboxes: document.querySelectorAll('#game-filters input[type="checkbox"]')
+            filterCheckboxes: document.querySelectorAll('#game-filters input[type="checkbox"]'),
+            
+            // History DOM
+            btnHistory: document.getElementById('btn-history'),
+            historyModal: document.getElementById('history-modal'),
+            closeHistoryBtn: document.getElementById('close-history-btn'),
+            historyList: document.getElementById('history-list')
         };
 
         function init() {
@@ -283,7 +360,6 @@
             const selectedGames = Array.from(dom.filterCheckboxes)
                                        .filter(cb => cb.checked)
                                        .map(cb => cb.value);
-            
             return SAFEBOORU_DB.filter(char => selectedGames.includes(char.game));
         }
 
@@ -311,16 +387,13 @@
 
             try {
                 const searchTags = `solo ${char.tag}`;
-                // ยกเลิก Proxy ทั้งหมด ยิงตรงเข้า API
                 const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&tags=${encodeURIComponent(searchTags)}`;
                 
                 const response = await fetch(targetApiUrl);
-                
-                if (!response.ok) throw new Error(`HTTP Error ${response.status}: เซิร์ฟเวอร์ปฏิเสธการเชื่อมต่อ`);
+                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
                 const data = await response.json();
 
-                // กรองเอาโพสต์ที่มีรูปภาพ และตัดวิดีโอ/ไฟล์บีบอัดออก
                 const validPosts = data.filter(post => 
                     (post.large_file_url || post.file_url) && 
                     !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)
@@ -328,9 +401,7 @@
 
                 if (validPosts && validPosts.length > 0) {
                     const randomPost = validPosts[Math.floor(Math.random() * validPosts.length)];
-                    // ดึงภาพตรงๆ ไม่ผ่าน Image Proxy
                     const imageUrl = randomPost.large_file_url || randomPost.file_url;
-                    
                     dom.img.src = imageUrl;
                 } else {
                     throw new Error("ไม่มีภาพ หรือภาพถูกซ่อนลิขสิทธิ์");
@@ -417,6 +488,45 @@
             if (isRevealed) return;
             isRevealed = true;
             dom.infoBox.classList.add('revealed');
+            
+            // --- ระบบบันทึกประวัติ ---
+            if (currentCharacter && dom.img.src) {
+                // เช็คว่ารูปล่าสุดไม่ซ้ำกับประวัติใบบนสุด
+                if (playHistory.length === 0 || playHistory[0].url !== dom.img.src) {
+                    playHistory.unshift({
+                        name: currentCharacter.name,
+                        game: currentCharacter.game,
+                        url: dom.img.src
+                    });
+                }
+            }
+        }
+
+        // --- ฟังก์ชันจัดการ History Modal ---
+        function openHistoryModal() {
+            dom.historyList.innerHTML = '';
+            if (playHistory.length === 0) {
+                dom.historyList.innerHTML = '<li style="text-align:center; color:#808e9b; padding:20px;">ยังไม่มีประวัติการทายในรอบนี้</li>';
+            } else {
+                playHistory.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'history-item';
+                    li.innerHTML = `
+                        <img src="${item.url}" alt="History Image" class="history-img" onerror="this.src='https://placehold.co/60x60/2d3436/0fb9b1?text=Error'">
+                        <div class="history-info">
+                            <strong>${item.name}</strong>
+                            <small>${item.game}</small>
+                        </div>
+                    `;
+                    dom.historyList.appendChild(li);
+                });
+            }
+            dom.historyModal.classList.add('show');
+            dom.btnHistory.blur();
+        }
+
+        function closeHistoryModal() {
+            dom.historyModal.classList.remove('show');
         }
 
         function setupEventListeners() {
@@ -426,7 +536,13 @@
                 });
             });
 
+            // ปุ่มเปิด/ปิดประวัติ
+            dom.btnHistory.addEventListener('click', openHistoryModal);
+            dom.closeHistoryBtn.addEventListener('click', closeHistoryModal);
+
             document.addEventListener('keydown', (e) => {
+                if (dom.historyModal.classList.contains('show')) return; // ถ้าเปิดหน้าต่างประวัติอยู่ ไม่ต้องรับคำสั่งคีย์บอร์ดเกม
+
                 if (e.code === 'Space') {
                     e.preventDefault(); 
                     if (!isRevealed) openRandomTile();
@@ -435,6 +551,10 @@
                     revealAll();
                 } else if (e.code === 'Enter') {
                     e.preventDefault();
+                    // ถ้ายังไม่เฉลยแล้วกดข้าม ให้ถือว่ายอมแพ้ และบันทึกลงประวัติเลย
+                    if (!isRevealed && currentCharacter) {
+                        revealCharacterInfo();
+                    }
                     if (!isLoading) loadRandomCharacterFromSafebooru();
                 }
             });
