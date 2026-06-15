@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v4.5 Timer Mode</title>
+    <title>Gacha Guessing Game - v5.0 Typing & Timer Control</title>
     <style>
         :root {
             --bg-color: #1e272e;
             --text-color: #ffffff;
             --primary-color: #0fb9b1;
             --danger-color: #fc5c65;
+            --success-color: #20bf6b;
             --edit-color: #fed330;
             --panel-bg: #2d3436;
         }
@@ -28,45 +29,70 @@
             position: relative;
         }
 
-        .top-menu {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            z-index: 100;
+        /* ====================
+           Scoreboard System
+           ==================== */
+        .scoreboard-container {
+            position: absolute; top: 20px; left: 20px; background: rgba(45, 52, 54, 0.9);
+            border-radius: 8px; padding: 15px; width: 270px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1); z-index: 100; max-height: 80vh;
+            display: flex; flex-direction: column; backdrop-filter: blur(5px);
+        }
+        .scoreboard-header {
+            margin-bottom: 10px; font-size: 1.1rem; color: var(--primary-color);
+            border-bottom: 1px solid #485460; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .player-list { flex: 1; overflow-y: auto; list-style: none; margin-bottom: 10px; }
+        .player-list::-webkit-scrollbar { width: 4px; }
+        .player-list::-webkit-scrollbar-thumb { background: #485460; border-radius: 2px; }
+        
+        .player-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #1e272e; padding: 8px 10px; margin-bottom: 8px;
+            border-radius: 6px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s;
+        }
+        .player-item:hover { background: #353b48; }
+        .player-item.active { border-left-color: var(--primary-color); background: rgba(15, 185, 177, 0.15); }
+        .player-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; }
+        .player-score { font-weight: bold; color: var(--edit-color); font-size: 1.2rem; margin-left: 10px; }
+        
+        .add-player-box { display: flex; gap: 5px; }
+        .add-player-box input {
+            flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #485460; background: #1e272e; color: white; width: 100%; outline: none;
+        }
+        .add-player-box input:focus { border-color: var(--primary-color); }
+        .add-player-box button {
+            background: var(--primary-color); border: none; color: white; padding: 0 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
         }
 
+        .award-btn {
+            background: var(--success-color); border: none; color: white;
+            padding: 5px 8px; border-radius: 4px; font-size: 0.85rem;
+            cursor: pointer; display: none; font-weight: bold; margin-left: 10px;
+            animation: popIn 0.3s ease;
+        }
+        .award-btn:hover { background: #2ed573; transform: scale(1.05); }
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        
+        .player-item.can-award .award-btn { display: block; }
+        .player-item.can-award .delete-btn { display: none; }
+        .delete-btn { background: none; border: none; color: #fc5c65; cursor: pointer; margin-left: 8px; font-size: 1.2rem; opacity: 0.5; }
+        .delete-btn:hover { opacity: 1; }
+
+        .top-menu { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; align-items: center; z-index: 100; }
         .btn-menu {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-color);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 9px 15px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1); color: var(--text-color); border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 9px 15px; border-radius: 6px; text-decoration: none; font-size: 0.95rem; transition: all 0.2s; cursor: pointer;
         }
         .btn-menu:hover { background: rgba(255, 255, 255, 0.2); }
 
         .game-filter-container {
-            margin-top: 30px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 10;
+            margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;
+            background: rgba(255, 255, 255, 0.05); padding: 12px 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); z-index: 10;
         }
 
         .filter-label {
-            display: flex; align-items: center; gap: 8px; color: #d2dae2; cursor: pointer;
-            font-size: 0.95rem; user-select: none; transition: color 0.2s;
+            display: flex; align-items: center; gap: 8px; color: #d2dae2; cursor: pointer; font-size: 0.95rem; user-select: none; transition: color 0.2s;
         }
         .filter-label:hover { color: var(--text-color); }
         .filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary-color); width: 16px; height: 16px; }
@@ -76,29 +102,27 @@
             width: 100%; max-width: 800px; padding: 20px; flex: 1; justify-content: center;
         }
 
-        /* CSS: ป้ายจับเวลาทรงแคปซูลเด่นชัด */
+        /* ป้ายแสดงโบนัส และจับเวลา */
+        .status-badges { display: flex; gap: 15px; margin-bottom: 20px; }
+        .round-bonus-badge, .timer-badge {
+            padding: 8px 25px; border-radius: 20px; font-size: 1.2rem; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: inline-block; transition: all 0.3s ease;
+        }
+        .round-bonus-badge {
+            background: rgba(254, 211, 48, 0.15); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.3);
+        }
         .timer-badge {
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--edit-color);
-            border: 1px solid rgba(254, 211, 48, 0.2);
-            padding: 8px 25px;
-            border-radius: 20px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-            display: inline-block;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.04); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.2);
         }
 
         #image-wrapper {
             position: relative; display: inline-flex; justify-content: center; align-items: center;
-            min-width: 320px; min-height: 450px; max-height: 55vh; max-width: 100%;
+            min-width: 320px; min-height: 450px; max-height: 50vh; max-width: 100%;
             background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         #character-img {
-            display: block; max-height: 55vh; max-width: 100%; width: auto; height: auto;
+            display: block; max-height: 50vh; max-width: 100%; width: auto; height: auto;
             object-fit: contain; pointer-events: none; user-select: none; border-radius: 8px; transition: opacity 0.3s;
         }
 
@@ -108,22 +132,11 @@
         }
 
         .grid-tile { 
-            background-color: #1e272e; 
-            border: 1px solid #485460; 
-            transition: opacity 0.3s ease, background-color 0.2s ease; 
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: rgba(255, 255, 255, 0.25); 
-            font-size: 1.5rem;
-            font-weight: bold;
-            user-select: none; 
+            background-color: #1e272e; border: 1px solid #485460; transition: opacity 0.3s ease, background-color 0.2s ease; 
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            color: rgba(255, 255, 255, 0.25); font-size: 1.5rem; font-weight: bold; user-select: none; 
         }
-        .grid-tile:hover { 
-            background-color: #2d3436; 
-            color: rgba(255, 255, 255, 0.6);
-        }
+        .grid-tile:hover { background-color: #2d3436; color: rgba(255, 255, 255, 0.6); }
 
         #loading-indicator {
             position: absolute; display: flex; flex-direction: column; justify-content: center;
@@ -132,13 +145,32 @@
         }
         #loading-indicator.show { opacity: 1; }
         .spinner {
-            width: 40px; height: 40px; border: 4px solid rgba(15, 185, 177, 0.3);
-            border-top: 4px solid var(--primary-color); border-radius: 50%;
+            width: 40px; height: 40px; border: 4px solid rgba(15, 185, 177, 0.3); border-top: 4px solid var(--primary-color); border-radius: 50%;
             animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #character-info { margin-top: 25px; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease, transform 0.4s ease; height: 90px; }
+        /* ====================
+           Guessing System UI
+           ==================== */
+        .guessing-section {
+            margin-top: 20px; display: flex; gap: 10px; width: 100%; max-width: 400px;
+            align-items: center; flex-direction: column;
+        }
+        .guessing-input-group { display: flex; gap: 10px; width: 100%; }
+        .guessing-input-group input {
+            flex: 1; padding: 12px 15px; border-radius: 8px; border: 2px solid #485460;
+            background: rgba(0,0,0,0.3); color: white; font-size: 1.1rem; outline: none; text-align: center;
+        }
+        .guessing-input-group input:focus { border-color: var(--primary-color); }
+        .guessing-input-group button {
+            background: var(--primary-color); border: none; color: white; padding: 0 20px;
+            border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .guessing-input-group button:hover { background: #0c9c95; }
+        .guess-feedback { font-weight: bold; font-size: 1.1rem; height: 25px; transition: 0.2s; }
+
+        #character-info { margin-top: 15px; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease, transform 0.4s ease; height: 90px; }
         #character-info.revealed { opacity: 1; transform: translateY(0); }
         #char-name { font-size: 2.5rem; margin-bottom: 5px; color: var(--primary-color); text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
         #char-game { font-size: 1.2rem; color: #d2dae2; }
@@ -149,7 +181,6 @@
         }
         kbd { background-color: #485460; padding: 3px 8px; border-radius: 4px; color: white; font-family: monospace; }
 
-        /* History Modal */
         #history-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85);
             display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
@@ -174,12 +205,22 @@
         .history-info strong { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary-color); }
         .history-info small { color: #d2dae2; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .app-version {
-            position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.3); pointer-events: none;
-        }
+        .app-version { position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.3); pointer-events: none; }
     </style>
 </head>
 <body>
+
+    <div class="scoreboard-container">
+        <div class="scoreboard-header">
+            <span>👥 ผู้เล่น & คะแนน</span>
+            <button style="background:none; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem;" onclick="resetScores()">รีเซ็ต</button>
+        </div>
+        <ul class="player-list" id="players-list"></ul>
+        <div class="add-player-box">
+            <input type="text" id="new-player-name" placeholder="เพิ่มชื่อผู้เล่น..." onkeypress="if(event.key === 'Enter') addPlayer()">
+            <button onclick="addPlayer()">+</button>
+        </div>
+    </div>
 
     <div class="top-menu">
         <button id="btn-history" class="btn-menu">🕒 ประวัติการทาย</button>
@@ -187,6 +228,10 @@
     </div>
 
     <div class="game-filter-container" id="game-filters">
+        <label class="filter-label" style="margin-right: 15px; border-right: 1px solid #485460; padding-right: 15px;">
+            <input type="checkbox" id="toggle-timer" checked> ⏳ เปิดจับเวลา 15 วิ
+        </label>
+        
         <label class="filter-label"><input type="checkbox" value="Genshin Impact" checked> Genshin Impact</label>
         <label class="filter-label"><input type="checkbox" value="Honkai: Star Rail" checked> Honkai: Star Rail</label>
         <label class="filter-label"><input type="checkbox" value="Arknights" checked> Arknights</label>
@@ -196,16 +241,28 @@
 
     <div id="game-container">
         
-        <div class="timer-badge" id="timer-display">⏳ รอเปิดป้าย...</div>
+        <div class="status-badges">
+            <div class="round-bonus-badge">
+                🏆 โบนัส: <span id="round-bonus-display">36</span>
+            </div>
+            <div class="timer-badge" id="timer-display">⏳ รอเปิดป้าย...</div>
+        </div>
 
         <div id="image-wrapper">
             <div id="loading-indicator">
                 <div class="spinner"></div>
                 <span id="loading-text">กำลังค้นหาตัวละครใหม่...</span>
             </div>
-            
             <img id="character-img" src="" alt="Gacha Character">
             <div id="grid-overlay"></div>
+        </div>
+
+        <div class="guessing-section" id="guessing-section">
+            <div class="guessing-input-group">
+                <input type="text" id="guess-input" placeholder="พิมพ์ชื่อตัวละครที่นี่..." autocomplete="off">
+                <button onclick="submitGuess()">ตอบ!</button>
+            </div>
+            <div class="guess-feedback" id="guess-feedback"></div>
         </div>
         
         <div id="character-info">
@@ -214,7 +271,7 @@
         </div>
 
         <div class="controls-hint">
-            <kbd>คลิก</kbd> หรือ <kbd>Space</kbd> เปิดทีละช่อง&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>R</kbd> เฉลยทันที&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Enter</kbd> สุ่มตัวถัดไป
+            <kbd>คลิกป้าย</kbd> เปิดช่อง&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>R</kbd> เฉลย/ยอมแพ้&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Enter</kbd> สุ่มตัวถัดไป
         </div>
     </div>
 
@@ -228,7 +285,7 @@
         </div>
     </div>
 
-    <div class="app-version">v4.5 - Timer Event Mode</div>
+    <div class="app-version">v5.0 - Typing Check & Timer Control</div>
 
     <script>
         const GAME_TAGS = {
@@ -247,7 +304,10 @@
         let playHistory = []; 
         let retryCount = 0;
         
-        // ตัวแปรควบคุมระบบนับถอยหลัง
+        let players = JSON.parse(localStorage.getItem('gachaPlayers')) || [];
+        let activePlayerId = null;
+        let hasAwarded = false;
+
         let timerInterval = null;
         let timeLeft = 15;
 
@@ -268,29 +328,115 @@
             historyModal: document.getElementById('history-modal'),
             closeHistoryBtn: document.getElementById('close-history-btn'),
             historyList: document.getElementById('history-list'),
-            timerDisplay: document.getElementById('timer-display') // ผูกตัวแปร DOM จับเวลา
+            playersList: document.getElementById('players-list'),
+            newPlayerInput: document.getElementById('new-player-name'),
+            roundBonusDisplay: document.getElementById('round-bonus-display'),
+            timerDisplay: document.getElementById('timer-display'),
+            toggleTimer: document.getElementById('toggle-timer'),
+            
+            // Guessing DOM
+            guessingSection: document.getElementById('guessing-section'),
+            guessInput: document.getElementById('guess-input'),
+            guessFeedback: document.getElementById('guess-feedback')
         };
 
         function init() {
             loadLocalData();
             setupEventListeners();
+            renderPlayers();
             loadRandomCharacter();
 
             window.addEventListener('storage', (e) => {
-                if (e.key === 'gachaGameData') {
-                    loadLocalData();
+                if (e.key === 'gachaGameData') loadLocalData();
+                if (e.key === 'gachaPlayers') {
+                    players = JSON.parse(localStorage.getItem('gachaPlayers')) || [];
+                    renderPlayers();
                 }
             });
         }
 
-        // --- ระบบฟังก์ชันควบคุมตัวจับเวลา ---
+        // ==========================================
+        // ระบบตรวจคำตอบด้วยความคล้ายคลึง (Levenshtein + Substring)
+        // ==========================================
+        function checkAnswerSimilarity(guess, actual) {
+            // ลบช่องว่างและอักขระพิเศษออกให้หมดก่อนเทียบ
+            let a = actual.toLowerCase().replace(/[^a-z0-9]/g, '');
+            let b = guess.toLowerCase().replace(/[^a-z0-9]/g, '');
+            
+            if (b.length === 0) return false;
+            
+            // กฎข้อ 1: อนุโลมการพิมพ์คำสั้นที่ถูกเผง (เช่น พิมพ์ Raiden ในคำว่า Raiden Shogun)
+            if (a.includes(b) && b.length >= 4) return true;
+            if (b.includes(a) && a.length >= 4) return true;
+            
+            // กฎข้อ 2: ตรวจความผิดพลาดจากการพิมพ์ (Typo) ให้ผ่านถ้าเหมือนเกิน 70%
+            let matrix = [];
+            for(let i = 0; i <= b.length; i++){ matrix[i] = [i]; }
+            for(let j = 0; j <= a.length; j++){ matrix[0][j] = j; }
+            
+            for(let i = 1; i <= b.length; i++){
+                for(let j = 1; j <= a.length; j++){
+                    if(b.charAt(i-1) == a.charAt(j-1)){
+                        matrix[i][j] = matrix[i-1][j-1];
+                    } else {
+                        matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, Math.min(matrix[i][j-1] + 1, matrix[i-1][j] + 1));
+                    }
+                }
+            }
+            let distance = matrix[b.length][a.length];
+            let similarityPercentage = (1 - distance / Math.max(a.length, b.length)) * 100;
+            
+            return similarityPercentage >= 70;
+        }
+
+        window.submitGuess = function() {
+            if (isRevealed || !currentCharacter) return;
+            
+            const guess = dom.guessInput.value.trim();
+            if(!guess) return;
+
+            const isCorrect = checkAnswerSimilarity(guess, currentCharacter.name);
+            
+            if(isCorrect) {
+                // แจกคะแนนให้ Active Player ทันที ถ้ามี
+                dom.guessFeedback.textContent = "✅ ถูกต้องยอดเยี่ยม!";
+                dom.guessFeedback.style.color = "var(--success-color)";
+                
+                const currentBonus = unrevealedTiles.length > 0 ? unrevealedTiles.length : 36;
+                if(activePlayerId && !hasAwarded) {
+                    awardPoints(activePlayerId, currentBonus);
+                }
+                
+                // เฉลยภาพ
+                unrevealedTiles.forEach(tile => tile.style.opacity = '0');
+                revealCharacterInfo();
+            } else {
+                dom.guessFeedback.textContent = "❌ ยังไม่ถูก ลองพิมพ์ใหม่!";
+                dom.guessFeedback.style.color = "var(--danger-color)";
+                dom.guessInput.value = '';
+                dom.guessInput.focus();
+                
+                // สั่นกล่องข้อความ
+                dom.guessFeedback.style.transform = "translateX(-10px)";
+                setTimeout(() => dom.guessFeedback.style.transform = "translateX(10px)", 100);
+                setTimeout(() => dom.guessFeedback.style.transform = "translateX(0)", 200);
+            }
+        };
+
+        // --- ระบบควบคุมจับเวลา ---
         function startTimer() {
             if (isRevealed || isLoading) return;
             
-            // เคลียร์ค่าเก่าวางระบบใหม่ทุกครั้งที่มีการเปิดช่อง
             clearInterval(timerInterval);
-            timeLeft = 15;
             
+            // เช็คช่องว่าปิดจับเวลาอยู่หรือไม่
+            if (!dom.toggleTimer.checked) {
+                dom.timerDisplay.style.display = 'none';
+                return;
+            }
+            dom.timerDisplay.style.display = 'inline-block';
+            
+            timeLeft = 15;
             dom.timerDisplay.textContent = `⏱️ เวลาที่เหลือ: ${timeLeft} วิ`;
             dom.timerDisplay.style.color = "var(--edit-color)";
             dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
@@ -313,6 +459,11 @@
         function resetTimerUI() {
             clearInterval(timerInterval);
             timeLeft = 15;
+            if(!dom.toggleTimer.checked) {
+                dom.timerDisplay.style.display = 'none';
+                return;
+            }
+            dom.timerDisplay.style.display = 'inline-block';
             dom.timerDisplay.textContent = "⏳ รอเปิดป้าย...";
             dom.timerDisplay.style.color = "var(--edit-color)";
             dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
@@ -320,13 +471,83 @@
         }
         // ---------------------------------
 
+        function savePlayers() { localStorage.setItem('gachaPlayers', JSON.stringify(players)); }
+
+        function renderPlayers() {
+            dom.playersList.innerHTML = '';
+            const currentBonus = unrevealedTiles.length > 0 ? unrevealedTiles.length : (isRevealed ? 0 : 36);
+            if (dom.roundBonusDisplay) dom.roundBonusDisplay.textContent = currentBonus;
+
+            const isAwardPhase = isRevealed && !isLoading && currentCharacter && !hasAwarded;
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+
+            if(sortedPlayers.length === 0) {
+                dom.playersList.innerHTML = '<li style="text-align:center; color:#808e9b; font-size:0.85rem; padding:10px;">เพิ่มชื่อผู้เล่นด้านล่าง</li>';
+                return;
+            }
+
+            sortedPlayers.forEach(p => {
+                const li = document.createElement('li');
+                li.className = `player-item ${p.id === activePlayerId ? 'active' : ''} ${isAwardPhase ? 'can-award' : ''}`;
+                li.onclick = (e) => {
+                    if(!e.target.closest('button')) {
+                        activePlayerId = p.id;
+                        renderPlayers();
+                    }
+                };
+                li.innerHTML = `
+                    <span class="player-name">${p.name}</span>
+                    <span class="player-score">${p.score}</span>
+                    ${isAwardPhase ? `<button class="award-btn" onclick="awardPoints('${p.id}', ${currentBonus}); event.stopPropagation();">+${currentBonus}</button>` : ''}
+                    ${!isAwardPhase ? `<button class="delete-btn" onclick="removePlayer('${p.id}'); event.stopPropagation();" title="ลบผู้เล่น">×</button>` : ''}
+                `;
+                dom.playersList.appendChild(li);
+            });
+        }
+
+        window.addPlayer = function() {
+            const name = dom.newPlayerInput.value.trim();
+            if(name) {
+                players.push({ id: Date.now().toString(), name: name, score: 0 });
+                savePlayers();
+                dom.newPlayerInput.value = '';
+                if(players.length === 1) activePlayerId = players[0].id;
+                renderPlayers();
+            }
+        };
+
+        window.removePlayer = function(id) {
+            if(confirm('ต้องการลบผู้เล่นนี้ใช่หรือไม่?')) {
+                players = players.filter(p => p.id !== id);
+                if(activePlayerId === id) activePlayerId = players.length > 0 ? players[0].id : null;
+                savePlayers();
+                renderPlayers();
+            }
+        };
+
+        window.resetScores = function() {
+            if(confirm('ต้องการรีเซ็ตคะแนนทุกคนเป็น 0 ใช่หรือไม่?')) {
+                players.forEach(p => p.score = 0);
+                savePlayers();
+                renderPlayers();
+            }
+        };
+
+        window.awardPoints = function(id, points) {
+            if(hasAwarded) return; 
+            const player = players.find(p => p.id === id);
+            if(player) {
+                player.score += points;
+                hasAwarded = true; 
+                savePlayers();
+                renderPlayers(); 
+            }
+        };
+
         function loadLocalData() {
             const rawData = localStorage.getItem('gachaGameData');
-            if (rawData) {
-                localCharacters = JSON.parse(rawData);
-            } else {
-                localCharacters = [];
-            }
+            if (rawData) localCharacters = JSON.parse(rawData);
+            else localCharacters = [];
         }
 
         function formatCharacterName(tagString) {
@@ -355,7 +576,6 @@
             if (isLoading) return;
 
             const selectedGames = Array.from(dom.filterCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
-            
             if (selectedGames.length === 0) {
                 alert("กรุณาเลือกเกมอย่างน้อย 1 เกมครับ!");
                 return;
@@ -363,12 +583,19 @@
 
             isLoading = true;
             isRevealed = false;
-            resetTimerUI(); // เคลียร์เวลาเมื่อเริ่มข้อใหม่
-
+            hasAwarded = false; 
+            
+            // รีเซ็ต UI การพิมพ์
+            dom.guessInput.value = '';
+            dom.guessFeedback.textContent = '';
+            dom.guessingSection.style.display = 'flex'; // แสดงช่องให้ตอบ
+            
             dom.img.style.opacity = 0; 
             dom.gridOverlay.innerHTML = ''; 
             dom.infoBox.classList.remove('revealed');
             dom.loading.classList.add('show');
+            resetTimerUI();
+            renderPlayers(); 
             
             if (retryCount === 0) dom.loadingText.textContent = "กำลังค้นหาตัวละครแบบสุ่ม...";
 
@@ -428,9 +655,7 @@
             isLoading = false;
         };
 
-        dom.img.onerror = () => {
-            handleAutoRetry("ไฟล์รูปต้นทางเสียหาย หรือถูกบล็อก");
-        }
+        dom.img.onerror = () => handleAutoRetry("ไฟล์รูปต้นทางเสียหาย หรือถูกบล็อก");
 
         function showError(message) {
             dom.loading.classList.remove('show');
@@ -441,15 +666,15 @@
                     <span style="font-size: 3rem; margin-bottom: 10px;">⚠️</span>
                     <strong style="font-size: 1.2rem;">ข้อผิดพลาด</strong>
                     <p style="font-size: 0.9rem; margin-top: 5px; color: #d2dae2;">${message}</p>
-                    <small style="margin-top: 15px;">กด Enter เพื่อสั่งสุ่มใหม่ด้วยตัวเอง</small>
+                    <small style="margin-top: 15px;">กด Enter เพื่อสั่งสุ่มใหม่</small>
                 </div>
             `;
-            
             if (currentCharacter) {
                 dom.nameDisplay.textContent = currentCharacter.name;
                 dom.gameDisplay.textContent = currentCharacter.game;
             }
             dom.infoBox.classList.add('revealed'); 
+            renderPlayers();
         }
 
         function createGrid() {
@@ -469,13 +694,15 @@
                     const index = unrevealedTiles.indexOf(this);
                     if (index > -1) unrevealedTiles.splice(index, 1);
                     
-                    startTimer(); // เรียกใช้นับถอยหลังใหม่เมื่อผู้เล่นคลิกเปิดป้าย
+                    renderPlayers();
+                    startTimer();
                     checkIfAllRevealed();
                 });
                 
                 dom.gridOverlay.appendChild(tile);
                 unrevealedTiles.push(tile);
             }
+            renderPlayers();
         }
 
         function openRandomTile() {
@@ -485,7 +712,8 @@
             tile.style.opacity = '0';
             unrevealedTiles.splice(randomIndex, 1);
             
-            startTimer(); // เรียกใช้นับถอยหลังใหม่เมื่อผู้เล่นเปิดสุ่มป้ายจากปุ่ม Spacebar
+            renderPlayers();
+            startTimer(); 
             checkIfAllRevealed();
         }
 
@@ -496,15 +724,18 @@
         function revealAll() {
             if (isRevealed || !currentCharacter || isLoading) return;
             unrevealedTiles.forEach(tile => tile.style.opacity = '0');
-            unrevealedTiles = [];
             revealCharacterInfo();
         }
 
         function revealCharacterInfo() {
             if (isRevealed) return;
             isRevealed = true;
-            clearInterval(timerInterval); // หยุดจับเวลาเมื่อเฉลยคำตอบเรียบร้อยแล้ว
-            dom.timerDisplay.textContent = "🏁 เฉลยแล้ว!";
+            
+            clearInterval(timerInterval);
+            if(dom.toggleTimer.checked) dom.timerDisplay.textContent = "🏁 เฉลยแล้ว!";
+            
+            // ซ่อนกล่องให้พิมพ์
+            dom.guessingSection.style.display = 'none';
             
             if (currentCharacter) {
                 dom.nameDisplay.textContent = currentCharacter.name;
@@ -512,14 +743,11 @@
             }
 
             dom.infoBox.classList.add('revealed');
+            renderPlayers();
             
             if (currentCharacter && dom.img.src) {
                 if (playHistory.length === 0 || playHistory[0].url !== dom.img.src) {
-                    playHistory.unshift({
-                        name: currentCharacter.name,
-                        game: currentCharacter.game,
-                        url: dom.img.src
-                    });
+                    playHistory.unshift({ name: currentCharacter.name, game: currentCharacter.game, url: dom.img.src });
                 }
             }
         }
@@ -546,21 +774,22 @@
             dom.btnHistory.blur();
         }
 
-        function closeHistoryModal() {
-            dom.historyModal.classList.remove('show');
-        }
+        function closeHistoryModal() { dom.historyModal.classList.remove('show'); }
 
         function setupEventListeners() {
-            dom.filterCheckboxes.forEach(cb => {
-                cb.addEventListener('change', function() {
-                    this.blur();
-                });
-            });
-
+            dom.filterCheckboxes.forEach(cb => { cb.addEventListener('change', function() { this.blur(); }); });
+            dom.toggleTimer.addEventListener('change', function() { resetTimerUI(); this.blur(); });
             dom.btnHistory.addEventListener('click', openHistoryModal);
             dom.closeHistoryBtn.addEventListener('click', closeHistoryModal);
 
+            // ดัก Enter ที่ช่องพิมพ์ตอบ ให้เช็คคำตอบ
+            dom.guessInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') submitGuess();
+            });
+
             document.addEventListener('keydown', (e) => {
+                // ถ้าพิมพ์อยู่ใน input ไม่ต้องไปรบกวน Shortcut คีย์บอร์ด
+                if (document.activeElement.tagName === 'INPUT') return;
                 if (dom.historyModal.classList.contains('show')) return; 
 
                 if (e.code === 'Space') {
@@ -572,6 +801,7 @@
                 } else if (e.code === 'Enter') {
                     e.preventDefault();
                     if (!isRevealed && currentCharacter) {
+                        unrevealedTiles = []; 
                         revealCharacterInfo();
                     }
                     if (!isLoading) {
