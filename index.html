@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v4.4 Numbered Grid</title>
+    <title>Gacha Guessing Game - v4.5 Timer Mode</title>
     <style>
         :root {
             --bg-color: #1e272e;
             --text-color: #ffffff;
             --primary-color: #0fb9b1;
             --danger-color: #fc5c65;
+            --edit-color: #fed330;
             --panel-bg: #2d3436;
         }
 
@@ -75,6 +76,21 @@
             width: 100%; max-width: 800px; padding: 20px; flex: 1; justify-content: center;
         }
 
+        /* CSS: ป้ายจับเวลาทรงแคปซูลเด่นชัด */
+        .timer-badge {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--edit-color);
+            border: 1px solid rgba(254, 211, 48, 0.2);
+            padding: 8px 25px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
         #image-wrapper {
             position: relative; display: inline-flex; justify-content: center; align-items: center;
             min-width: 320px; min-height: 450px; max-height: 55vh; max-width: 100%;
@@ -91,7 +107,6 @@
             display: grid; border-radius: 8px; overflow: hidden;
         }
 
-        /* ตกแต่งแผ่นป้ายให้แสดงตัวเลข */
         .grid-tile { 
             background-color: #1e272e; 
             border: 1px solid #485460; 
@@ -100,10 +115,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            color: rgba(255, 255, 255, 0.25); /* สีโปร่งแสง */
+            color: rgba(255, 255, 255, 0.25); 
             font-size: 1.5rem;
             font-weight: bold;
-            user-select: none; /* ห้ามคลุมดำตัวเลข */
+            user-select: none; 
         }
         .grid-tile:hover { 
             background-color: #2d3436; 
@@ -180,6 +195,9 @@
     </div>
 
     <div id="game-container">
+        
+        <div class="timer-badge" id="timer-display">⏳ รอเปิดป้าย...</div>
+
         <div id="image-wrapper">
             <div id="loading-indicator">
                 <div class="spinner"></div>
@@ -210,7 +228,7 @@
         </div>
     </div>
 
-    <div class="app-version">v4.4 - Numbered Grid (Base 4.1)</div>
+    <div class="app-version">v4.5 - Timer Event Mode</div>
 
     <script>
         const GAME_TAGS = {
@@ -228,6 +246,11 @@
         let unrevealedTiles = [];
         let playHistory = []; 
         let retryCount = 0;
+        
+        // ตัวแปรควบคุมระบบนับถอยหลัง
+        let timerInterval = null;
+        let timeLeft = 15;
+
         const MAX_RETRIES = 10; 
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
@@ -244,7 +267,8 @@
             btnHistory: document.getElementById('btn-history'),
             historyModal: document.getElementById('history-modal'),
             closeHistoryBtn: document.getElementById('close-history-btn'),
-            historyList: document.getElementById('history-list')
+            historyList: document.getElementById('history-list'),
+            timerDisplay: document.getElementById('timer-display') // ผูกตัวแปร DOM จับเวลา
         };
 
         function init() {
@@ -259,6 +283,43 @@
             });
         }
 
+        // --- ระบบฟังก์ชันควบคุมตัวจับเวลา ---
+        function startTimer() {
+            if (isRevealed || isLoading) return;
+            
+            // เคลียร์ค่าเก่าวางระบบใหม่ทุกครั้งที่มีการเปิดช่อง
+            clearInterval(timerInterval);
+            timeLeft = 15;
+            
+            dom.timerDisplay.textContent = `⏱️ เวลาที่เหลือ: ${timeLeft} วิ`;
+            dom.timerDisplay.style.color = "var(--edit-color)";
+            dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
+            dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.04)";
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                dom.timerDisplay.textContent = `⏱️ เวลาที่เหลือ: ${timeLeft} วิ`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    dom.timerDisplay.textContent = "⏰ หมดเวลา! เปิดช่องใหม่เพื่อเริ่มนับใหม่";
+                    dom.timerDisplay.style.color = "var(--danger-color)";
+                    dom.timerDisplay.style.borderColor = "rgba(252, 92, 165, 0.3)";
+                    dom.timerDisplay.style.background = "rgba(252, 92, 165, 0.05)";
+                }
+            }, 1000);
+        }
+
+        function resetTimerUI() {
+            clearInterval(timerInterval);
+            timeLeft = 15;
+            dom.timerDisplay.textContent = "⏳ รอเปิดป้าย...";
+            dom.timerDisplay.style.color = "var(--edit-color)";
+            dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
+            dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.04)";
+        }
+        // ---------------------------------
+
         function loadLocalData() {
             const rawData = localStorage.getItem('gachaGameData');
             if (rawData) {
@@ -270,11 +331,9 @@
 
         function formatCharacterName(tagString) {
             if (!tagString) return null;
-            
             let firstTag = tagString.split(' ')[0];
             firstTag = firstTag.replace(/\_\([^)]+\)/g, '');
             firstTag = firstTag.replace(/\([^)]+\)/g, '');
-            
             let nameWithSpaces = firstTag.replace(/_/g, ' ');
             return nameWithSpaces.replace(/\b\w/g, char => char.toUpperCase()).trim();
         }
@@ -295,9 +354,7 @@
         async function loadRandomCharacter() {
             if (isLoading) return;
 
-            const selectedGames = Array.from(dom.filterCheckboxes)
-                                       .filter(cb => cb.checked)
-                                       .map(cb => cb.value);
+            const selectedGames = Array.from(dom.filterCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
             
             if (selectedGames.length === 0) {
                 alert("กรุณาเลือกเกมอย่างน้อย 1 เกมครับ!");
@@ -306,7 +363,8 @@
 
             isLoading = true;
             isRevealed = false;
-            
+            resetTimerUI(); // เคลียร์เวลาเมื่อเริ่มข้อใหม่
+
             dom.img.style.opacity = 0; 
             dom.gridOverlay.innerHTML = ''; 
             dom.infoBox.classList.remove('revealed');
@@ -403,8 +461,6 @@
             for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
                 const tile = document.createElement('div');
                 tile.className = 'grid-tile';
-                
-                // เพิ่มตัวเลขลงไปในป้าย (1 ถึง 36)
                 tile.textContent = i + 1;
                 
                 tile.addEventListener('click', function() {
@@ -412,6 +468,8 @@
                     this.style.opacity = '0';
                     const index = unrevealedTiles.indexOf(this);
                     if (index > -1) unrevealedTiles.splice(index, 1);
+                    
+                    startTimer(); // เรียกใช้นับถอยหลังใหม่เมื่อผู้เล่นคลิกเปิดป้าย
                     checkIfAllRevealed();
                 });
                 
@@ -426,6 +484,8 @@
             const tile = unrevealedTiles[randomIndex];
             tile.style.opacity = '0';
             unrevealedTiles.splice(randomIndex, 1);
+            
+            startTimer(); // เรียกใช้นับถอยหลังใหม่เมื่อผู้เล่นเปิดสุ่มป้ายจากปุ่ม Spacebar
             checkIfAllRevealed();
         }
 
@@ -443,6 +503,8 @@
         function revealCharacterInfo() {
             if (isRevealed) return;
             isRevealed = true;
+            clearInterval(timerInterval); // หยุดจับเวลาเมื่อเฉลยคำตอบเรียบร้อยแล้ว
+            dom.timerDisplay.textContent = "🏁 เฉลยแล้ว!";
             
             if (currentCharacter) {
                 dom.nameDisplay.textContent = currentCharacter.name;
@@ -467,7 +529,7 @@
             if (playHistory.length === 0) {
                 dom.historyList.innerHTML = '<li style="text-align:center; color:#808e9b; padding:20px;">ยังไม่มีประวัติการทายในรอบนี้</li>';
             } else {
-                playHistory.forEach((item, index) => {
+                playHistory.forEach((item) => {
                     const li = document.createElement('li');
                     li.className = 'history-item';
                     li.innerHTML = `
