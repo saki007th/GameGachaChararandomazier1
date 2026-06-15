@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v3.1 Fixed Reveal Delay</title>
+    <title>Gacha Guessing Game - v4.0 Dynamic API</title>
     <style>
         :root {
             --bg-color: #1e272e;
@@ -151,7 +151,6 @@
             color: rgba(255,255,255,0.3);
             pointer-events: none;
         }
-
     </style>
 </head>
 <body>
@@ -173,7 +172,7 @@
         <div id="image-wrapper">
             <div id="loading-indicator">
                 <div class="spinner"></div>
-                <span id="loading-text">กำลังดึงข้อมูลฐานภาพ...</span>
+                <span id="loading-text">กำลังค้นหาตัวละครใหม่...</span>
             </div>
             
             <img id="character-img" src="" alt="Gacha Character">
@@ -200,69 +199,26 @@
         </div>
     </div>
 
-    <div class="app-version">v3.1 - Fixed Reveal Delay</div>
+    <div class="app-version">v4.0 - Dynamic Tag Parser</div>
 
     <script>
-        const SAFEBOORU_DB = [
-            // --- Genshin Impact ---
-            { name: "Hu Tao", game: "Genshin Impact", tag: "hu_tao_(genshin_impact)" },
-            { name: "Raiden Shogun", game: "Genshin Impact", tag: "raiden_shogun" },
-            { name: "Furina", game: "Genshin Impact", tag: "furina_(genshin_impact)" },
-            { name: "Navia", game: "Genshin Impact", tag: "navia_(genshin_impact)" },
-            { name: "Zhongli", game: "Genshin Impact", tag: "zhongli_(genshin_impact)" },
-            { name: "Yelan", game: "Genshin Impact", tag: "yelan_(genshin_impact)" },
-            { name: "Nahida", game: "Genshin Impact", tag: "nahida_(genshin_impact)" },
-            { name: "Arlecchino", game: "Genshin Impact", tag: "arlecchino_(genshin_impact)" },
-
-            // --- Honkai: Star Rail ---
-            { name: "Kafka", game: "Honkai: Star Rail", tag: "kafka_(honkai:_star_rail)" },
-            { name: "Firefly", game: "Honkai: Star Rail", tag: "firefly_(honkai:_star_rail)" },
-            { name: "Acheron", game: "Honkai: Star Rail", tag: "acheron_(honkai:_star_rail)" },
-            { name: "Silver Wolf", game: "Honkai: Star Rail", tag: "silver_wolf_(honkai:_star_rail)" },
-            { name: "Jingliu", game: "Honkai: Star Rail", tag: "jingliu_(honkai:_star_rail)" },
-            { name: "Ruan Mei", game: "Honkai: Star Rail", tag: "ruan_mei_(honkai:_star_rail)" },
-            { name: "Sparkle", game: "Honkai: Star Rail", tag: "sparkle_(honkai:_star_rail)" },
-            { name: "Robin", game: "Honkai: Star Rail", tag: "robin_(honkai:_star_rail)" },
-
-            // --- Arknights ---
-            { name: "Amiya", game: "Arknights", tag: "amiya_(arknights)" },
-            { name: "Ch'en", game: "Arknights", tag: "ch'en_(arknights)" },
-            { name: "Texas", game: "Arknights", tag: "texas_(arknights)" },
-            { name: "Exusiai", game: "Arknights", tag: "exusiai_(arknights)" },
-            { name: "Surtr", game: "Arknights", tag: "surtr_(arknights)" },
-            { name: "Mudrock", game: "Arknights", tag: "mudrock_(arknights)" },
-            { name: "Kal'tsit", game: "Arknights", tag: "kal'tsit_(arknights)" },
-            { name: "Skadi", game: "Arknights", tag: "skadi_(arknights)" },
-
-            // --- Blue Archive ---
-            { name: "Shiroko", game: "Blue Archive", tag: "sunaookami_shiroko" },
-            { name: "Yuuka", game: "Blue Archive", tag: "hayase_yuuka" },
-            { name: "Hina", game: "Blue Archive", tag: "sorasaki_hina" },
-            { name: "Aris", game: "Blue Archive", tag: "tendou_aris" },
-            { name: "Aru", game: "Blue Archive", tag: "rikuhachima_aru" },
-            { name: "Mika", game: "Blue Archive", tag: "misono_mika" },
-            { name: "Hoshino", game: "Blue Archive", tag: "takanashi_hoshino" },
-            { name: "Toki", game: "Blue Archive", tag: "asuma_toki" },
-
-            // --- Zenless Zone Zero (ZZZ) ---
-            { name: "Anby Demara", game: "Zenless Zone Zero", tag: "anby_demara" },
-            { name: "Nicole Demara", game: "Zenless Zone Zero", tag: "nicole_demara" },
-            { name: "Ellen Joe", game: "Zenless Zone Zero", tag: "ellen_joe" },
-            { name: "Zhu Yuan", game: "Zenless Zone Zero", tag: "zhu_yuan_(zenless_zone_zero)" },
-            { name: "Miyabi", game: "Zenless Zone Zero", tag: "hoshimi_miyabi" },
-            { name: "Soldier 11", game: "Zenless Zone Zero", tag: "soldier_11_(zenless_zone_zero)" }
-        ];
+        // ฐานข้อมูลเหลือเพียงแค่ชื่อเกม และ Tag หลักของเกมนั้นๆ เท่านั้น!
+        const GAME_TAGS = {
+            "Genshin Impact": "genshin_impact",
+            "Honkai: Star Rail": "honkai:_star_rail",
+            "Arknights": "arknights",
+            "Blue Archive": "blue_archive",
+            "Zenless Zone Zero": "zenless_zone_zero"
+        };
 
         let localCharacters = []; 
-        let drawPool = []; 
-        
         let currentCharacter = null;
         let isRevealed = false;
         let isLoading = false;
         let unrevealedTiles = [];
         let playHistory = []; 
         let retryCount = 0;
-        const MAX_RETRIES = 5;
+        const MAX_RETRIES = 10; // เพิ่มจำนวนครั้งทะลุบล็อกเพราะบางภาพอาจไม่มี Tag ตัวละคร
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
 
@@ -300,36 +256,31 @@
             } else {
                 localCharacters = [];
             }
-            drawPool = []; 
         }
 
-        function getFilteredDatabase() {
-            const selectedGames = Array.from(dom.filterCheckboxes)
-                                       .filter(cb => cb.checked)
-                                       .map(cb => cb.value);
+        // ฟังก์ชันพระเอก: แปลง Tag ดิบๆ ให้เป็นชื่อคนสวยงาม
+        function formatCharacterName(tagString) {
+            if (!tagString) return null;
             
-            const apiChars = SAFEBOORU_DB.filter(char => selectedGames.includes(char.game));
-            const localChars = localCharacters; 
-
-            return [...apiChars, ...localChars];
-        }
-
-        function refillPool() {
-            const activeDatabase = getFilteredDatabase();
-            if (activeDatabase.length === 0) return false;
+            // API จะส่งมาเป็นแท็กคั่นด้วยช่องว่าง เช่น "hu_tao_(genshin_impact) zhongli" เราดึงแค่ชื่อแรกสุด
+            let firstTag = tagString.split(' ')[0];
             
-            drawPool = [...activeDatabase];
-            for (let i = drawPool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [drawPool[i], drawPool[j]] = [drawPool[j], drawPool[i]];
-            }
-            return true;
+            // 1. ตัดคำในวงเล็บทิ้ง เช่น _(genshin_impact) หรือ _(swimsuit)
+            firstTag = firstTag.replace(/\_\([^)]+\)/g, '');
+            // 2. ตัดวงเล็บที่ติดมาแบบแปลกๆ ทิ้ง
+            firstTag = firstTag.replace(/\([^)]+\)/g, '');
+            
+            // 3. เปลี่ยนเครื่องหมาย _ เป็นช่องว่าง
+            let nameWithSpaces = firstTag.replace(/_/g, ' ');
+            
+            // 4. ทำตัวอักษรตัวแรกของแต่ละคำให้เป็นตัวพิมพ์ใหญ่ (Capitalize)
+            return nameWithSpaces.replace(/\b\w/g, char => char.toUpperCase()).trim();
         }
 
         function handleAutoRetry(errorMessage) {
             if (retryCount < MAX_RETRIES) {
                 retryCount++;
-                dom.loadingText.textContent = `พบรูปเสีย กำลังสุ่มใหม่... (ครั้งที่ ${retryCount})`;
+                dom.loadingText.textContent = `ค้นหาตัวละครใหม่... (ครั้งที่ ${retryCount})`;
                 isLoading = false; 
                 setTimeout(() => loadRandomCharacter(), 800);
             } else {
@@ -341,12 +292,14 @@
 
         async function loadRandomCharacter() {
             if (isLoading) return;
+
+            const selectedGames = Array.from(dom.filterCheckboxes)
+                                       .filter(cb => cb.checked)
+                                       .map(cb => cb.value);
             
-            if (drawPool.length === 0) {
-                if (!refillPool()) {
-                    alert("กรุณาเลือกเกมอย่างน้อย 1 เกม หรือเพิ่มข้อมูลเอง!");
-                    return;
-                }
+            if (selectedGames.length === 0) {
+                alert("กรุณาเลือกเกมอย่างน้อย 1 เกมครับ!");
+                return;
             }
 
             isLoading = true;
@@ -354,42 +307,55 @@
             
             dom.img.style.opacity = 0; 
             dom.gridOverlay.innerHTML = ''; 
-            dom.infoBox.classList.remove('revealed'); // สั่งให้กรอบเดิมค่อยๆ จางหาย 0.4s
+            dom.infoBox.classList.remove('revealed');
             dom.loading.classList.add('show');
             
-            if (retryCount === 0) dom.loadingText.textContent = "กำลังดึงข้อมูลฐานภาพ...";
+            if (retryCount === 0) dom.loadingText.textContent = "กำลังค้นหาตัวละครแบบสุ่ม...";
 
-            const char = drawPool.pop();
-            currentCharacter = char;
-            
-            // หมายเหตุ: เราลบคำสั่งเปลี่ยน Text ออกจากตรงนี้ เพื่อไม่ให้ชื่อใหม่ไปโผล่แทรกตอนที่กรอบเดิมกำลัง Fade-out
+            // สุ่มเลือกว่าจะดึงจาก Local Database หรือ API (โอกาส 15% ที่จะเจอรูปที่ตั้งเอง ถ้ามีรูปในระบบ)
+            const localFiltered = localCharacters.filter(char => selectedGames.includes(char.game));
+            const pickFromLocal = (localFiltered.length > 0 && Math.random() < 0.15);
 
             try {
-                if (char.url) {
-                    dom.img.src = char.url;
-                } else if (char.tag) {
-                    const searchTags = `solo ${char.tag}`;
-                    const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&tags=${encodeURIComponent(searchTags)}`;
+                if (pickFromLocal) {
+                    const localChar = localFiltered[Math.floor(Math.random() * localFiltered.length)];
+                    currentCharacter = { name: localChar.name, game: localChar.game };
+                    dom.img.src = localChar.url;
+                } else {
+                    // ดึงจาก API ตามเกมที่เลือก
+                    const randomGame = selectedGames[Math.floor(Math.random() * selectedGames.length)];
+                    const gameApiTag = GAME_TAGS[randomGame];
+                    
+                    // ใช้ parameter random=true เพื่อให้เซิร์ฟเวอร์สุ่มรูปมาให้ 1 รูปถ้วน
+                    const searchTags = `solo ${gameApiTag}`;
+                    const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=1&random=true&tags=${encodeURIComponent(searchTags)}`;
                     
                     const response = await fetch(targetApiUrl);
                     if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
                     const data = await response.json();
-                    const validPosts = data.filter(post => 
-                        (post.large_file_url || post.file_url) && 
-                        !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)
-                    );
-
-                    if (validPosts && validPosts.length > 0) {
-                        const randomPost = validPosts[Math.floor(Math.random() * validPosts.length)];
-                        dom.img.src = randomPost.large_file_url || randomPost.file_url;
+                    
+                    if (data && data.length > 0) {
+                        const post = data[0];
+                        
+                        // ตรวจสอบว่ารูปนี้สามารถดึงชื่อตัวละครออกมาได้ไหม
+                        const extractedName = formatCharacterName(post.tag_string_character);
+                        
+                        // ถ้าไฟล์ไม่ใช่วิดีโอ และมีชื่อตัวละคร ให้แสดงผล
+                        if (extractedName && !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)) {
+                            currentCharacter = { name: extractedName, game: randomGame };
+                            dom.img.src = post.large_file_url || post.file_url;
+                        } else {
+                            // ถ้ารูปนั้นเป็นวิวเฉยๆ หรือไม่มีชื่อตัวละครกำกับ ให้สุ่มใหม่ (Retry) ทันที
+                            throw new Error("รูปนี้ไม่มีข้อมูลชื่อตัวละครอ้างอิง");
+                        }
                     } else {
-                        throw new Error("ไม่มีภาพ หรือภาพถูกซ่อนลิขสิทธิ์");
+                        throw new Error("ไม่มีภาพ หรือเซิร์ฟเวอร์โหลดไม่ทัน");
                     }
                 }
             } catch (error) {
-                console.error("Fetch Error:", error);
-                handleAutoRetry(`การดึงข้อมูลล้มเหลว`);
+                console.warn("Fetch Error (Retrying):", error.message);
+                handleAutoRetry(`ภาพไม่มีคำตอบ หรือไฟล์เสีย`);
             }
         }
 
@@ -403,7 +369,7 @@
         };
 
         dom.img.onerror = () => {
-            handleAutoRetry("ไฟล์รูปต้นทางเสียหาย หรือเป็นลิงก์เว็บไซต์แทนที่จะเป็นรูปภาพ");
+            handleAutoRetry("ไฟล์รูปต้นทางเสียหาย หรือถูกบล็อก");
         }
 
         function showError(message) {
@@ -419,7 +385,6 @@
                 </div>
             `;
             
-            // อัปเดตข้อความก่อนเปิดกรอบให้เห็น
             if (currentCharacter) {
                 dom.nameDisplay.textContent = currentCharacter.name;
                 dom.gameDisplay.textContent = currentCharacter.game;
@@ -474,7 +439,6 @@
             if (isRevealed) return;
             isRevealed = true;
             
-            // นำคำสั่งเปลี่ยนข้อความมาใส่ตรงนี้ เพื่อให้ข้อความอัปเดตเฉพาะตอนถูกสั่งเฉลยเท่านั้น
             if (currentCharacter) {
                 dom.nameDisplay.textContent = currentCharacter.name;
                 dom.gameDisplay.textContent = currentCharacter.game;
@@ -522,7 +486,6 @@
         function setupEventListeners() {
             dom.filterCheckboxes.forEach(cb => {
                 cb.addEventListener('change', function() {
-                    drawPool = []; 
                     this.blur();
                 });
             });
