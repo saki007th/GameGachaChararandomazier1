@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v7.4 Stable API</title>
+    <title>Gacha Guessing Game - v7.5 Strict Memory</title>
     <style>
         :root {
             --bg-color-top: #2f3640;
@@ -341,7 +341,7 @@
         </div>
     </div>
 
-    <div class="app-version">v7.4 - API Limit Bypass</div>
+    <div class="app-version">v7.5 - Strict Memory System</div>
 
     <script>
         const DEFAULT_GAMES = [
@@ -365,6 +365,9 @@
         let activePlayerId = null;
         let hasAwarded = false;
 
+        // ระบบความจำ 50 ตัวล่าสุด (กันซ้ำ)
+        let seenCharacters = [];
+
         let timerInterval = null;
         let timeLeft = 15;
         let hintLevel = 0;
@@ -373,7 +376,7 @@
         const UNLOCK_THRESHOLD = 12;
         const LOCKED_COUNT = 6; 
         const PENALTY_POINTS = 5; 
-        const MAX_RETRIES = 10; 
+        const MAX_RETRIES = 15; // เพิ่มโอกาสให้ระบบหาของแปลกๆ ให้เจอ
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
 
@@ -467,6 +470,13 @@
                 localCharacters = rawData ? JSON.parse(rawData) : [];
                 if (!Array.isArray(localCharacters)) localCharacters = [];
             } catch (e) { localCharacters = []; localStorage.removeItem('gachaGameData'); }
+            
+            // โหลดความจำ 50 ตัวล่าสุด
+            try {
+                const memory = localStorage.getItem('gachaSeenCharacters');
+                seenCharacters = memory ? JSON.parse(memory) : [];
+                if (!Array.isArray(seenCharacters)) seenCharacters = [];
+            } catch (e) { seenCharacters = []; localStorage.removeItem('gachaSeenCharacters'); }
         }
 
         function init() {
@@ -523,10 +533,15 @@
         function handleAutoRetry(errorMessage) {
             if (retryCount < MAX_RETRIES) {
                 retryCount++;
-                if(dom.loadingText) dom.loadingText.textContent = `ค้นหาตัวละครใหม่... (ครั้งที่ ${retryCount})`;
+                if(dom.loadingText) dom.loadingText.textContent = `สุ่มหน้าใหม่... (ครั้งที่ ${retryCount})`;
                 isLoading = false; 
                 setTimeout(() => loadRandomCharacter(), 800);
             } else {
+                // เคลียร์ความจำครึ่งนึงหากถึงทางตัน (ป้องกันลูปนรกกรณีเกมมีตัวละครน้อย)
+                if (seenCharacters.length > 0) {
+                    seenCharacters = seenCharacters.slice(Math.floor(seenCharacters.length / 2));
+                    localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
+                }
                 isLoading = false; retryCount = 0;
                 showError(errorMessage + " (ข้ามภาพอัตโนมัติเกินขีดจำกัด)");
             }
@@ -570,21 +585,25 @@
                     const localChar = localFiltered[Math.floor(Math.random() * localFiltered.length)];
                     currentCharacter = { name: localChar.name, game: localChar.game };
                     if(dom.img) { dom.img.style.display = 'block'; dom.img.src = localChar.url; }
+                    
+                    // บันทึกลง Memory
+                    seenCharacters.push(currentCharacter.name.toLowerCase());
+                    if (seenCharacters.length > 50) seenCharacters.shift();
+                    localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
+
                 } else {
                     const randomGameObj = activeGames[Math.floor(Math.random() * activeGames.length)];
-                    
-                    // FIXED บั๊ก API 422: ใช้ลอจิกสลับ Tag เพื่อรักษาโควตา 2 คำ (2-Tags Rule) ของ Safebooru
                     let searchTags = randomGameObj.tag;
                     let randomPage = 1;
                     
                     const forceAnimated = allowAnimated && Math.random() < 0.35;
                     
                     if (forceAnimated) {
-                        searchTags += ` animated`; // ค้นหาเฉพาะภาพเคลื่อนไหว
-                        randomPage = Math.floor(Math.random() * 2) + 1; // อนิเมชันมีน้อย หาแค่หน้า 1-2
+                        searchTags += ` animated`; 
+                        randomPage = Math.floor(Math.random() * 2) + 1; 
                     } else {
-                        searchTags += ` solo`; // ค้นหาภาพนิ่งปกติ
-                        randomPage = Math.floor(Math.random() * 20) + 1; // สุ่มลึกได้ 20 หน้า
+                        searchTags += ` solo`; 
+                        randomPage = Math.floor(Math.random() * 100) + 1; // ขยายความลึกเป็น 100 หน้า!
                     }
 
                     const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
@@ -603,13 +622,18 @@
                         return true;
                     });
 
-                    const recentNames = playHistory.slice(0, 15).map(h => h.name.toLowerCase());
+                    // ระบบความจำ (Strict Filter): ตัด 50 ตัวล่าสุดออกไปเลย!
                     let unplayedPosts = validPosts.filter(post => {
                         const charName = formatCharacterName(post.tag_string_character);
-                        return charName && !recentNames.includes(charName.toLowerCase());
+                        return charName && !seenCharacters.includes(charName.toLowerCase());
                     });
 
-                    if (unplayedPosts.length > 0) validPosts = unplayedPosts;
+                    // ถ้ารอบนี้มีแต่ตัวซ้ำ ให้เตะทิ้งทั้งหน้า แล้วโยน Error เพื่อวิ่งไปหาหน้าใหม่ทันที
+                    if (unplayedPosts.length > 0) {
+                        validPosts = unplayedPosts;
+                    } else {
+                        throw new Error("เจอแต่ตัวละครที่ซ้ำกับรอบก่อนหน้า");
+                    }
 
                     if (validPosts.length > 0) {
                         const landscapePosts = validPosts.filter(p => p.image_width > p.image_height);
@@ -632,12 +656,18 @@
                             } else {
                                 dom.img.style.display = 'block'; dom.img.src = fileUrl;
                             }
+
+                            // บันทึกลง Memory ทันทีที่สุ่มเจอ (ไม่ต้องรอให้กดเฉลย)
+                            seenCharacters.push(currentCharacter.name.toLowerCase());
+                            if (seenCharacters.length > 50) seenCharacters.shift(); // จำแค่ 50 ตัวล่าสุดพอ
+                            localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
+
                         } else { throw new Error("สกัดชื่อตัวละครไม่สำเร็จ"); }
                     } else { throw new Error("ไม่พบภาพที่ใช้งานได้ในหน้านี้"); }
                 }
             } catch (error) {
                 console.warn("Fetch Error (Retrying):", error.message);
-                handleAutoRetry(`ภาพไม่มีคำตอบ หรือถูกบล็อกการเชื่อมต่อ`);
+                handleAutoRetry(`กำลังหาภาพใหม่...`);
             }
         }
 
@@ -978,6 +1008,7 @@
             if (dom.video && dom.video.style.display === 'block') displayUrl = dom.video.src;
             
             if (currentCharacter && displayUrl) {
+                // บันทึกเฉพาะรูปลงในประวัติ History การเล่น
                 if (playHistory.length === 0 || playHistory[0].url !== displayUrl) {
                     playHistory.unshift({ name: currentCharacter.name, game: currentCharacter.game, url: displayUrl });
                 }
