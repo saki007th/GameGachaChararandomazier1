@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v5.4.1</title>
+    <title>Gacha Guessing Game - v6.0 Modern UI</title>
     <style>
         :root {
-            --bg-color: #1e272e;
+            --bg-color-top: #2f3640;
+            --bg-color-bottom: #1e272e;
             --text-color: #ffffff;
             --primary-color: #0fb9b1;
             --danger-color: #fc5c65;
             --success-color: #20bf6b;
             --edit-color: #fed330;
-            --panel-bg: #2d3436;
+            --panel-bg: rgba(45, 52, 54, 0.85);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            background-color: var(--bg-color);
+            /* ปรับพื้นหลังให้มีมิติไล่สี */
+            background: radial-gradient(circle at 50% 0%, var(--bg-color-top), var(--bg-color-bottom));
             color: var(--text-color);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -33,63 +35,70 @@
            Scoreboard System
            ==================== */
         .scoreboard-container {
-            position: absolute; top: 20px; left: 20px; background: rgba(45, 52, 54, 0.9);
-            border-radius: 8px; padding: 15px; width: 270px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1); z-index: 100; max-height: 80vh;
-            display: flex; flex-direction: column; backdrop-filter: blur(5px);
+            position: absolute; top: 20px; left: 20px; background: var(--panel-bg);
+            border-radius: 12px; padding: 15px; width: 280px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08); z-index: 100; max-height: 80vh;
+            display: flex; flex-direction: column; backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         .scoreboard-header {
-            margin-bottom: 10px; font-size: 1.1rem; color: var(--primary-color);
-            border-bottom: 1px solid #485460; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; font-size: 1.1rem; color: var(--primary-color);
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
         }
         .player-list { flex: 1; overflow-y: auto; list-style: none; margin-bottom: 10px; }
-        .player-list::-webkit-scrollbar { width: 4px; }
-        .player-list::-webkit-scrollbar-thumb { background: #485460; border-radius: 2px; }
+        .player-list::-webkit-scrollbar { width: 5px; }
+        .player-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
         
         .player-item {
             display: flex; justify-content: space-between; align-items: center;
-            background: #1e272e; padding: 8px 10px; margin-bottom: 8px;
-            border-radius: 6px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s;
+            background: rgba(0,0,0,0.2); padding: 10px 12px; margin-bottom: 8px;
+            border-radius: 8px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s ease;
         }
-        .player-item:hover { background: #353b48; }
-        .player-item.active { border-left-color: var(--primary-color); background: rgba(15, 185, 177, 0.15); }
+        .player-item:hover { background: rgba(255,255,255,0.05); transform: translateX(2px); }
+        .player-item.active { border-left-color: var(--primary-color); background: rgba(15, 185, 177, 0.15); box-shadow: inset 0 0 10px rgba(15, 185, 177, 0.1); }
         .player-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; }
         .player-score { font-weight: bold; color: var(--edit-color); font-size: 1.2rem; margin-left: 10px; transition: color 0.3s; }
         .player-score.negative { color: var(--danger-color); }
         
-        .add-player-box { display: flex; gap: 5px; }
+        .add-player-box { display: flex; gap: 8px; }
         .add-player-box input {
-            flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #485460; background: #1e272e; color: white; width: 100%; outline: none;
+            flex: 1; padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; width: 100%; outline: none; transition: 0.2s;
         }
-        .add-player-box input:focus { border-color: var(--primary-color); }
+        .add-player-box input:focus { border-color: var(--primary-color); background: rgba(0,0,0,0.5); }
         .add-player-box button {
-            background: var(--primary-color); border: none; color: white; padding: 0 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            background: var(--primary-color); border: none; color: white; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
         }
 
         .award-btn {
             background: var(--success-color); border: none; color: white;
-            padding: 5px 8px; border-radius: 4px; font-size: 0.85rem;
+            padding: 6px 10px; border-radius: 6px; font-size: 0.85rem;
             cursor: pointer; display: none; font-weight: bold; margin-left: 10px;
-            animation: popIn 0.3s ease;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 10px rgba(32, 191, 107, 0.3);
         }
         .award-btn:hover { background: #2ed573; transform: scale(1.05); }
         @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
         
         .player-item.can-award .award-btn { display: block; }
         .player-item.can-award .delete-btn { display: none; }
-        .delete-btn { background: none; border: none; color: #fc5c65; cursor: pointer; margin-left: 8px; font-size: 1.2rem; opacity: 0.5; }
-        .delete-btn:hover { opacity: 1; }
+        .delete-btn { background: none; border: none; color: #fc5c65; cursor: pointer; margin-left: 8px; font-size: 1.2rem; opacity: 0.5; transition: 0.2s; }
+        .delete-btn:hover { opacity: 1; transform: scale(1.2); }
 
         .top-menu { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; align-items: center; z-index: 100; }
         .btn-menu {
-            background: rgba(255, 255, 255, 0.1); color: var(--text-color); border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 9px 15px; border-radius: 6px; text-decoration: none; font-size: 0.95rem; transition: all 0.2s; cursor: pointer;
+            background: rgba(255, 255, 255, 0.05); color: var(--text-color); border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 0.95rem; transition: all 0.2s; cursor: pointer; backdrop-filter: blur(5px);
         }
-        .btn-menu:hover { background: rgba(255, 255, 255, 0.2); }
+        .btn-menu:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); }
+
+        /* Tactile Feedback สำหรับปุ่มทั้งหมด */
+        button:active, .btn-menu:active { transform: scale(0.95); }
 
         .game-filter-container {
-            margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;
-            background: rgba(255, 255, 255, 0.05); padding: 12px 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); z-index: 10;
+            margin-top: 30px; display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
+            background: rgba(0, 0, 0, 0.2); padding: 15px 25px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); z-index: 10;
+            backdrop-filter: blur(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .filter-label {
@@ -100,53 +109,73 @@
 
         #game-container {
             text-align: center; display: flex; flex-direction: column; align-items: center;
-            width: 100%; max-width: 800px; padding: 20px; flex: 1; justify-content: center;
+            width: 100%; max-width: 900px; padding: 20px; flex: 1; justify-content: center;
         }
 
         .status-badges { display: flex; gap: 15px; margin-bottom: 20px; }
         .round-bonus-badge, .timer-badge {
-            padding: 8px 25px; border-radius: 20px; font-size: 1.2rem; font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: inline-block; transition: all 0.3s ease;
+            padding: 10px 30px; border-radius: 30px; font-size: 1.25rem; font-weight: bold;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2); display: inline-block; transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);
         }
-        .round-bonus-badge { background: rgba(254, 211, 48, 0.15); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.3); }
-        .timer-badge { background: rgba(255, 255, 255, 0.04); color: var(--edit-color); border: 1px solid rgba(254, 211, 48, 0.2); }
+        .round-bonus-badge { background: rgba(254, 211, 48, 0.15); color: var(--edit-color); }
+        .timer-badge { background: rgba(255, 255, 255, 0.05); color: var(--edit-color); }
 
+        /* ปรับปรุงพื้นที่แสดงภาพตรงกลางให้ใหญ่ขึ้น และดูพรีเมียม */
         #image-wrapper {
             position: relative; display: inline-flex; justify-content: center; align-items: center;
-            min-width: 320px; min-height: 450px; max-height: 50vh; max-width: 100%;
-            background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-width: 320px; min-height: 450px; max-height: 65vh; max-width: 100%;
+            background-color: rgba(0, 0, 0, 0.3); border-radius: 12px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 20px rgba(15, 185, 177, 0.1); /* Glow Effect */
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            perspective: 1000px; /* รองรับ 3D Animation */
         }
 
         #character-img {
-            display: block; max-height: 50vh; max-width: 100%; width: auto; height: auto;
-            object-fit: contain; pointer-events: none; user-select: none; border-radius: 8px; transition: opacity 0.3s;
+            display: block; max-height: 65vh; max-width: 100%; width: auto; height: auto;
+            object-fit: contain; pointer-events: none; user-select: none; border-radius: 12px; transition: opacity 0.4s ease;
         }
 
         #grid-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            display: grid; border-radius: 8px; overflow: hidden;
+            display: grid; border-radius: 12px; overflow: hidden;
+            perspective: 1000px;
         }
 
+        /* ====================
+           3D Grid & Blurred Locked Tiles CSS
+           ==================== */
         .grid-tile { 
-            background-color: #1e272e; border: 1px solid #485460; transition: opacity 0.3s ease, background-color 0.2s ease, border-color 0.2s ease, backdrop-filter 0.3s ease; 
+            background-color: #2d3436; border: 1px solid rgba(255,255,255,0.05); 
+            /* แอนิเมชัน 3 มิติ เด้งดึ๋งนุ่มนวล */
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease, background-color 0.2s ease, backdrop-filter 0.3s ease; 
             cursor: pointer; display: flex; justify-content: center; align-items: center;
-            color: rgba(255, 255, 255, 0.25); font-size: 1.5rem; font-weight: bold; user-select: none; position: relative;
+            color: rgba(255, 255, 255, 0.3); font-size: 1.6rem; font-weight: bold; user-select: none; position: relative;
+            transform-origin: center;
         }
-        .grid-tile:hover { background-color: #2d3436; color: rgba(255, 255, 255, 0.6); }
+        .grid-tile:hover { background-color: #353b48; color: rgba(255, 255, 255, 0.8); box-shadow: inset 0 0 15px rgba(0,0,0,0.3); }
         
+        /* คลาสใหม่สำหรับการเปิดป้าย (3D Flip) */
+        .grid-tile.opened {
+            transform: rotateX(90deg) scale(0.8);
+            opacity: 0;
+            pointer-events: none;
+        }
+
         .grid-tile.locked {
             background-color: transparent !important;
             color: rgba(252, 92, 101, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px); 
         }
         .grid-tile.locked::after {
-            content: "🔒"; position: absolute; font-size: 1.5rem; color: var(--danger-color);
-            opacity: 0.8; pointer-events: none; transition: 0.2s ease;
+            content: "🔒"; position: absolute; font-size: 1.8rem; color: var(--danger-color);
+            opacity: 0.8; pointer-events: none; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
-        .grid-tile.locked:hover::after { opacity: 1; transform: scale(1.15); }
+        .grid-tile.locked:hover::after { opacity: 1; transform: scale(1.25); }
 
-        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: rgba(252, 92, 101, 0.5) !important; }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: rgba(252, 92, 101, 0.5) !important; background-color: rgba(252, 92, 101, 0.1) !important; }
         @keyframes shake {
             10%, 90% { transform: translate3d(-2px, 0, 0); }
             20%, 80% { transform: translate3d(3px, 0, 0); }
@@ -161,68 +190,69 @@
         }
         #loading-indicator.show { opacity: 1; }
         .spinner {
-            width: 40px; height: 40px; border: 4px solid rgba(15, 185, 177, 0.3); border-top: 4px solid var(--primary-color); border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 15px;
+            width: 45px; height: 45px; border: 4px solid rgba(15, 185, 177, 0.2); border-top: 4px solid var(--primary-color); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px; box-shadow: 0 0 15px rgba(15, 185, 177, 0.3);
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Guessing System & Hint UI */
-        .guessing-section { margin-top: 20px; display: flex; gap: 10px; width: 100%; max-width: 400px; align-items: center; flex-direction: column; }
+        .guessing-section { margin-top: 25px; display: flex; gap: 12px; width: 100%; max-width: 450px; align-items: center; flex-direction: column; }
         .guessing-input-group { display: flex; gap: 10px; width: 100%; }
         .guessing-input-group input {
-            flex: 1; padding: 12px 15px; border-radius: 8px; border: 2px solid #485460; background: rgba(0,0,0,0.3); color: white; font-size: 1.1rem; outline: none; text-align: center;
+            flex: 1; padding: 14px 18px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); color: white; font-size: 1.15rem; outline: none; text-align: center; transition: 0.3s; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
         }
-        .guessing-input-group input:focus { border-color: var(--primary-color); }
+        .guessing-input-group input:focus { border-color: var(--primary-color); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(15, 185, 177, 0.2); }
         .guessing-input-group button {
-            background: var(--primary-color); border: none; color: white; padding: 0 20px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+            background: var(--primary-color); border: none; color: white; padding: 0 25px; border-radius: 10px; font-size: 1.15rem; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(15, 185, 177, 0.3);
         }
-        .guessing-input-group button:hover { background: #0c9c95; }
+        .guessing-input-group button:hover { background: #0c9c95; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(15, 185, 177, 0.4); }
         
         .hint-btn {
-            background: transparent; border: 1px solid var(--edit-color); color: var(--edit-color);
-            padding: 6px 15px; border-radius: 20px; font-size: 0.9rem; margin-top: 5px; cursor: pointer; transition: 0.2s; font-weight: bold;
+            background: transparent; border: 2px solid var(--edit-color); color: var(--edit-color);
+            padding: 8px 20px; border-radius: 25px; font-size: 0.95rem; margin-top: 5px; cursor: pointer; transition: 0.3s; font-weight: bold;
         }
-        .hint-btn:hover { background: rgba(254, 211, 48, 0.2); }
+        .hint-btn:hover { background: rgba(254, 211, 48, 0.15); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(254, 211, 48, 0.2); }
         .hint-display {
-            font-size: 1.4rem; letter-spacing: 2px; color: var(--edit-color); margin-top: 10px; font-family: monospace; display: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            font-size: 1.6rem; letter-spacing: 3px; color: var(--edit-color); margin-top: 10px; font-family: 'Courier New', Courier, monospace; display: none; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 10px 25px; border-radius: 8px; border: 1px dashed rgba(254, 211, 48, 0.3);
         }
 
-        .guess-feedback { font-weight: bold; font-size: 1.1rem; height: 25px; transition: 0.2s; margin-top: 5px; }
+        .guess-feedback { font-weight: bold; font-size: 1.1rem; height: 25px; transition: 0.2s; margin-top: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
-        #character-info { margin-top: 15px; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease, transform 0.4s ease; height: 90px; }
+        #character-info { margin-top: 20px; opacity: 0; transform: translateY(15px); transition: opacity 0.5s ease, transform 0.5s ease; height: 90px; }
         #character-info.revealed { opacity: 1; transform: translateY(0); }
-        #char-name { font-size: 2.5rem; margin-bottom: 5px; color: var(--primary-color); text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
-        #char-game { font-size: 1.2rem; color: #d2dae2; }
+        #char-name { font-size: 2.8rem; margin-bottom: 5px; color: var(--primary-color); text-shadow: 0 4px 8px rgba(0,0,0,0.6); letter-spacing: 1px; }
+        #char-game { font-size: 1.3rem; color: #d2dae2; opacity: 0.9; }
 
-        .controls-hint { margin-top: 10px; padding: 10px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; color: #808e9b; font-size: 0.9rem; letter-spacing: 0.5px; }
-        kbd { background-color: #485460; padding: 3px 8px; border-radius: 4px; color: white; font-family: monospace; }
+        .controls-hint { margin-top: 15px; padding: 12px 25px; background: rgba(0, 0, 0, 0.2); border-radius: 10px; color: #808e9b; font-size: 0.95rem; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.05); }
+        kbd { background-color: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 6px; color: white; font-family: monospace; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
 
         /* History Modal */
         #history-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85);
-            display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px);
         }
         #history-modal.show { opacity: 1; pointer-events: auto; }
         .modal-content {
-            background: var(--panel-bg); width: 90%; max-width: 500px; max-height: 80vh;
-            border-radius: 12px; padding: 25px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: var(--bg-color-top); width: 90%; max-width: 550px; max-height: 80vh;
+            border-radius: 16px; padding: 30px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);
         }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #485460; padding-bottom: 15px; }
-        .close-btn { background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1; }
-        .close-btn:hover { color: white; }
-        .history-list { flex: 1; overflow-y: auto; list-style: none; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        .close-btn { background: none; border: none; color: #aaa; font-size: 32px; cursor: pointer; line-height: 1; transition: 0.2s; }
+        .close-btn:hover { color: var(--danger-color); transform: scale(1.1); }
+        .history-list { flex: 1; overflow-y: auto; list-style: none; padding-right: 5px; }
         .history-list::-webkit-scrollbar { width: 6px; }
-        .history-list::-webkit-scrollbar-thumb { background: #485460; border-radius: 3px; }
+        .history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
         .history-item {
-            display: flex; align-items: center; gap: 15px; background: #1e272e; padding: 10px; margin-bottom: 10px;
-            border-radius: 8px; border-left: 4px solid var(--primary-color);
+            display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.2); padding: 12px; margin-bottom: 12px;
+            border-radius: 10px; border-left: 4px solid var(--primary-color); transition: 0.2s;
         }
-        .history-img { width: 60px; height: 60px; border-radius: 4px; object-fit: cover; background: #000; }
+        .history-item:hover { background: rgba(0,0,0,0.4); transform: translateX(3px); }
+        .history-img { width: 65px; height: 65px; border-radius: 8px; object-fit: cover; background: #000; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         .history-info { display: flex; flex-direction: column; overflow: hidden; }
-        .history-info strong { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary-color); }
-        .history-info small { color: #d2dae2; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-info strong { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary-color); margin-bottom: 3px; }
+        .history-info small { color: #d2dae2; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
 
-        .app-version { position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.3); pointer-events: none; }
+        .app-version { position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.2); pointer-events: none; }
     </style>
 </head>
 <body>
@@ -230,7 +260,7 @@
     <div class="scoreboard-container">
         <div class="scoreboard-header">
             <span>👥 ผู้เล่น & คะแนน</span>
-            <button style="background:none; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem;" onclick="resetScores()">รีเซ็ต</button>
+            <button style="background:none; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; opacity:0.8; transition:0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'" onclick="resetScores()">รีเซ็ต</button>
         </div>
         <ul class="player-list" id="players-list"></ul>
         <div class="add-player-box">
@@ -241,11 +271,11 @@
 
     <div class="top-menu">
         <button id="btn-history" class="btn-menu">🕒 ประวัติการทาย</button>
-        <a href="admin.html" id="admin-link" class="btn-menu">⚙️ จัดการข้อมูล (Local)</a>
+        <a href="admin.html" id="admin-link" class="btn-menu">⚙️ จัดการข้อมูล</a>
     </div>
 
     <div class="game-filter-container" id="game-filters">
-        <label class="filter-label" style="margin-right: 15px; border-right: 1px solid #485460; padding-right: 15px;">
+        <label class="filter-label" style="margin-right: 15px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
             <input type="checkbox" id="toggle-timer" checked> ⏳ เปิดจับเวลา 15 วิ
         </label>
         
@@ -293,6 +323,7 @@
         </div>
     </div>
 
+    <!-- History Modal -->
     <div id="history-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -303,7 +334,7 @@
         </div>
     </div>
 
-    <div class="app-version">v5.4.1 - Hint System Adjusted</div>
+    <div class="app-version">v6.0 - Modern UI Update</div>
 
     <script>
         const GAME_TAGS = {
@@ -314,6 +345,7 @@
             "Zenless Zone Zero": "zenless_zone_zero"
         };
 
+        // --- Safe Globals ---
         let localCharacters = []; 
         let currentCharacter = null;
         let isRevealed = false;
@@ -528,11 +560,11 @@
             if(dom.img) dom.img.style.opacity = 0; 
             unrevealedTiles = []; 
             if(dom.gridOverlay) dom.gridOverlay.innerHTML = `
-                <div style="background: rgba(252, 92, 101, 0.1); border: 2px dashed #fc5c65; border-radius: 8px; color: #fc5c65; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; text-align: center;">
-                    <span style="font-size: 3rem; margin-bottom: 10px;">⚠️</span>
-                    <strong style="font-size: 1.2rem;">ข้อผิดพลาด</strong>
-                    <p style="font-size: 0.9rem; margin-top: 5px; color: #d2dae2;">${message}</p>
-                    <small style="margin-top: 15px;">กด Enter เพื่อสั่งสุ่มใหม่</small>
+                <div style="background: rgba(252, 92, 101, 0.1); border: 2px dashed #fc5c65; border-radius: 12px; color: #fc5c65; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 30px; text-align: center;">
+                    <span style="font-size: 3.5rem; margin-bottom: 10px;">⚠️</span>
+                    <strong style="font-size: 1.4rem;">ข้อผิดพลาด</strong>
+                    <p style="font-size: 1rem; margin-top: 8px; color: #d2dae2;">${message}</p>
+                    <small style="margin-top: 20px; padding: 8px 15px; background: rgba(255,255,255,0.1); border-radius: 6px;">กด Enter เพื่อสั่งสุ่มใหม่</small>
                 </div>
             `;
             if (currentCharacter) {
@@ -571,7 +603,8 @@
                 }
                 
                 tile.addEventListener('click', function() {
-                    if (isRevealed || this.style.opacity === '0' || isLoading) return;
+                    // เปลี่ยนจากการเช็ค opacity เป็นการเช็คคลาส opened
+                    if (isRevealed || this.classList.contains('opened') || isLoading) return;
                     
                     if (this.dataset.isLocked === "true") {
                         const openedCount = totalTilesCount - unrevealedTiles.length;
@@ -591,7 +624,8 @@
                         }
                     }
 
-                    this.style.opacity = '0';
+                    // ใช้คลาส .opened เพื่อเล่น 3D Animation
+                    this.classList.add('opened');
                     const index = unrevealedTiles.indexOf(this);
                     if (index > -1) unrevealedTiles.splice(index, 1);
                     
@@ -639,7 +673,8 @@
             
             const randomIndex = Math.floor(Math.random() * availableTiles.length);
             const tileToOpen = availableTiles[randomIndex];
-            tileToOpen.style.opacity = '0';
+            
+            tileToOpen.classList.add('opened');
             
             const realIndex = unrevealedTiles.indexOf(tileToOpen);
             if (realIndex > -1) unrevealedTiles.splice(realIndex, 1);
@@ -654,7 +689,7 @@
             if (isRevealed || !currentCharacter || isLoading) return;
             unrevealedTiles.forEach(tile => {
                 tile.classList.remove('locked');
-                tile.style.opacity = '0';
+                tile.classList.add('opened');
             });
             revealCharacterInfo();
         }
@@ -685,13 +720,9 @@
             return similarityPercentage >= 70;
         }
 
-        // ==========================================
-        // ระบบคำใบ้ (Hint System) - Updated 5.4.1
-        // ==========================================
         window.requestHint = function() {
             if (!currentCharacter || isRevealed || isLoading) return;
             
-            // จำกัดแค่ 3 ครั้ง
             if (hintLevel >= 3) {
                 if(dom.guessFeedback) {
                     dom.guessFeedback.textContent = "⚠️ ใช้คำใบ้ครบ 3 ครั้งแล้ว!";
@@ -700,7 +731,7 @@
                 return;
             }
 
-            hintPenalty += 10; // ใช้ 10 คะแนน
+            hintPenalty += 10; 
             hintLevel++;
             
             const name = currentCharacter.name;
@@ -711,7 +742,6 @@
                 if (name[i] === ' ') {
                     result += '   '; 
                 } else {
-                    // เปิดตัวอักษรเรียงทีละตัวตามจำนวนครั้งที่กด
                     if (visibleCount < hintLevel) {
                         result += name[i] + ' ';
                         visibleCount++;
@@ -787,7 +817,7 @@
             dom.timerDisplay.textContent = `⏱️ เวลาที่เหลือ: ${timeLeft} วิ`;
             dom.timerDisplay.style.color = "var(--edit-color)";
             dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
-            dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.04)";
+            dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.05)";
 
             timerInterval = setInterval(() => {
                 timeLeft--;
@@ -798,7 +828,7 @@
                     dom.timerDisplay.textContent = "⏰ หมดเวลา! เปิดช่องใหม่เพื่อเริ่มนับใหม่";
                     dom.timerDisplay.style.color = "var(--danger-color)";
                     dom.timerDisplay.style.borderColor = "rgba(252, 92, 165, 0.3)";
-                    dom.timerDisplay.style.background = "rgba(252, 92, 165, 0.05)";
+                    dom.timerDisplay.style.background = "rgba(252, 92, 165, 0.1)";
                 }
             }, 1000);
         }
@@ -815,7 +845,7 @@
             dom.timerDisplay.textContent = "⏳ รอเปิดป้าย...";
             dom.timerDisplay.style.color = "var(--edit-color)";
             dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
-            dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.04)";
+            dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.05)";
         }
 
         function savePlayers() { 
