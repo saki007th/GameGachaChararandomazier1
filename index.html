@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v7.3 Animation Fixed</title>
+    <title>Gacha Guessing Game - v7.4 Stable API</title>
     <style>
         :root {
             --bg-color-top: #2f3640;
@@ -341,7 +341,7 @@
         </div>
     </div>
 
-    <div class="app-version">v7.3 - Perfect Animation Fixed</div>
+    <div class="app-version">v7.4 - API Limit Bypass</div>
 
     <script>
         const DEFAULT_GAMES = [
@@ -572,14 +572,21 @@
                     if(dom.img) { dom.img.style.display = 'block'; dom.img.src = localChar.url; }
                 } else {
                     const randomGameObj = activeGames[Math.floor(Math.random() * activeGames.length)];
-                    let searchTags = `solo ${randomGameObj.tag}`;
                     
-                    // FIXED บั๊กสุ่มไม่เจอ: มีโอกาส 35% ที่จะบังคับพ่วงแท็กแอนิเมชันตรงๆ ไปยังเซิร์ฟเวอร์
-                    if (allowAnimated && Math.random() < 0.35) {
-                        searchTags += ` animated`;
+                    // FIXED บั๊ก API 422: ใช้ลอจิกสลับ Tag เพื่อรักษาโควตา 2 คำ (2-Tags Rule) ของ Safebooru
+                    let searchTags = randomGameObj.tag;
+                    let randomPage = 1;
+                    
+                    const forceAnimated = allowAnimated && Math.random() < 0.35;
+                    
+                    if (forceAnimated) {
+                        searchTags += ` animated`; // ค้นหาเฉพาะภาพเคลื่อนไหว
+                        randomPage = Math.floor(Math.random() * 2) + 1; // อนิเมชันมีน้อย หาแค่หน้า 1-2
+                    } else {
+                        searchTags += ` solo`; // ค้นหาภาพนิ่งปกติ
+                        randomPage = Math.floor(Math.random() * 20) + 1; // สุ่มลึกได้ 20 หน้า
                     }
 
-                    const randomPage = Math.floor(Math.random() * 20) + 1;
                     const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
                     
                     const response = await fetch(targetApiUrl);
@@ -642,7 +649,6 @@
             if(dom.img && dom.img.style.display === 'block') dom.img.style.opacity = 1; 
             if(dom.video && dom.video.style.display === 'block') {
                 dom.video.style.opacity = 1;
-                // FIXED บั๊กวิดีโอไม่เล่น: บังคับให้เริ่มรันวิดีโอทันทีเพื่อเล่นเบื้องหลังแผ่นป้าย
                 dom.video.play().catch(e => console.warn("Autoplay Blocked: ", e));
             }
             
@@ -774,6 +780,15 @@
                 tile.classList.remove('locked'); tile.classList.add('opened');
             });
             revealCharacterInfo();
+        }
+
+        function formatCharacterName(tagString) {
+            if (!tagString) return null;
+            let firstTag = tagString.split(' ')[0];
+            firstTag = firstTag.replace(/\_\([^)]+\)/g, '');
+            firstTag = firstTag.replace(/\([^)]+\)/g, '');
+            let nameWithSpaces = firstTag.replace(/_/g, ' ');
+            return nameWithSpaces.replace(/\b\w/g, char => char.toUpperCase()).trim();
         }
 
         function checkAnswerSimilarity(guess, actual) {
@@ -977,7 +992,7 @@
                 playHistory.forEach((item) => {
                     const li = document.createElement('li'); li.className = 'history-item';
                     const isVideo = ['mp4', 'webm'].some(ext => item.url.includes(ext));
-                    const imgHTML = isVideo ? `<div class="history-img" style="display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:#aaa;">▶ Video</div>` 
+                    const imgHTML = isVideo ? `<div class="history-img" style="display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:#aaa; background:#111;">▶ Video</div>` 
                                             : `<img src="${item.url}" class="history-img" onerror="this.src='https://placehold.co/60x60/2d3436/0fb9b1?text=Error'">`;
                     
                     li.innerHTML = `${imgHTML}<div class="history-info"><strong>${item.name}</strong><small>${item.game}</small></div>`;
