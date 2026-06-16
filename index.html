@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v7.1 Animated Support</title>
+    <title>Gacha Guessing Game - v7.2 Loop Fixed</title>
     <style>
         :root {
             --bg-color-top: #2f3640;
@@ -118,7 +118,7 @@
 
         /* รองรับทั้งรูปภาพนิ่งและวิดีโอ */
         #character-img, #character-video {
-            display: none; /* ควบคุมด้วย JS */
+            display: none; 
             max-height: 65vh; max-width: 100%; width: auto; height: auto;
             object-fit: contain; pointer-events: none; user-select: none; border-radius: 12px; transition: opacity 0.4s ease;
         }
@@ -267,8 +267,10 @@
                 <div class="spinner"></div>
                 <span id="loading-text">กำลังค้นหาตัวละครใหม่...</span>
             </div>
-            <img id="character-img" src="" alt="Gacha Character">
+            
+            <img id="character-img" alt="Gacha Character">
             <video id="character-video" autoplay loop muted playsinline></video>
+            
             <div id="grid-overlay"></div>
         </div>
 
@@ -325,8 +327,7 @@
 
             <div style="margin-bottom: 25px;">
                 <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">🎮 เลือกเกมที่จะสุ่ม</h3>
-                <div id="settings-game-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 5px;">
-                    </div>
+                <div id="settings-game-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 5px;"></div>
             </div>
 
             <div>
@@ -341,10 +342,9 @@
         </div>
     </div>
 
-    <div class="app-version">v7.1 - Animated Media Support</div>
+    <div class="app-version">v7.2 - Infinite Loop Fixed</div>
 
     <script>
-        // --- Game Database Setup ---
         const DEFAULT_GAMES = [
             { id: 'def_1', name: "Genshin Impact", tag: "genshin_impact", active: true, isDefault: true },
             { id: 'def_2', name: "Honkai: Star Rail", tag: "honkai:_star_rail", active: true, isDefault: true },
@@ -402,27 +402,19 @@
             dom.settingsGameList.innerHTML = '';
             gamesDb.forEach(g => {
                 const div = document.createElement('div');
-                div.style.display = 'flex';
-                div.style.justifyContent = 'space-between';
-                div.style.alignItems = 'center';
-                div.style.background = 'rgba(0,0,0,0.2)';
-                div.style.padding = '8px 12px';
-                div.style.borderRadius = '8px';
+                div.style.display = 'flex'; div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center'; div.style.background = 'rgba(0,0,0,0.2)';
+                div.style.padding = '8px 12px'; div.style.borderRadius = '8px';
                 div.style.border = '1px solid rgba(255,255,255,0.05)';
 
                 const label = document.createElement('label');
-                label.style.display = 'flex';
-                label.style.alignItems = 'center';
-                label.style.gap = '10px';
-                label.style.cursor = 'pointer';
-                label.style.flex = '1';
-                label.style.overflow = 'hidden';
+                label.style.display = 'flex'; label.style.alignItems = 'center';
+                label.style.gap = '10px'; label.style.cursor = 'pointer';
+                label.style.flex = '1'; label.style.overflow = 'hidden';
 
                 const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = g.active;
-                checkbox.style.width = '16px';
-                checkbox.style.height = '16px';
+                checkbox.type = 'checkbox'; checkbox.checked = g.active;
+                checkbox.style.width = '16px'; checkbox.style.height = '16px';
                 checkbox.style.accentColor = 'var(--primary-color)';
                 checkbox.onchange = (e) => {
                     g.active = e.target.checked;
@@ -430,26 +422,19 @@
                 };
 
                 const span = document.createElement('span');
-                span.textContent = g.name;
-                span.style.whiteSpace = 'nowrap';
-                span.style.overflow = 'hidden';
-                span.style.textOverflow = 'ellipsis';
+                span.textContent = g.name; span.style.whiteSpace = 'nowrap';
+                span.style.overflow = 'hidden'; span.style.textOverflow = 'ellipsis';
                 span.style.fontSize = '0.95rem';
 
-                label.appendChild(checkbox);
-                label.appendChild(span);
+                label.appendChild(checkbox); label.appendChild(span);
                 div.appendChild(label);
 
                 if (!g.isDefault) {
                     const delBtn = document.createElement('button');
-                    delBtn.textContent = '×';
-                    delBtn.style.background = 'none';
-                    delBtn.style.border = 'none';
-                    delBtn.style.color = 'var(--danger-color)';
-                    delBtn.style.fontSize = '1.4rem';
-                    delBtn.style.cursor = 'pointer';
-                    delBtn.style.padding = '0 5px';
-                    delBtn.style.transition = '0.2s';
+                    delBtn.textContent = '×'; delBtn.style.background = 'none';
+                    delBtn.style.border = 'none'; delBtn.style.color = 'var(--danger-color)';
+                    delBtn.style.fontSize = '1.4rem'; delBtn.style.cursor = 'pointer';
+                    delBtn.style.padding = '0 5px'; delBtn.style.transition = '0.2s';
                     delBtn.onmouseover = () => delBtn.style.transform = 'scale(1.2)';
                     delBtn.onmouseout = () => delBtn.style.transform = 'scale(1)';
                     delBtn.onclick = () => {
@@ -475,16 +460,11 @@
                 return;
             }
             gamesDb.push({
-                id: 'custom_' + Date.now(),
-                name: name,
-                tag: tag,
-                active: true,
-                isDefault: false
+                id: 'custom_' + Date.now(), name: name, tag: tag, active: true, isDefault: false
             });
             saveGamesDb();
             renderSettingsGames();
-            dom.newGameName.value = '';
-            dom.newGameTag.value = '';
+            dom.newGameName.value = ''; dom.newGameTag.value = '';
         };
 
         function loadSafePlayers() {
@@ -544,31 +524,19 @@
                 hintDisplay: document.getElementById('hint-display')
             };
 
-            // โหลดตั้งค่า Animated Toggle
             const storedAnimated = localStorage.getItem('gachaAllowAnimated');
-            if(storedAnimated !== null) {
+            if(storedAnimated !== null && dom.toggleAnimated) {
                 dom.toggleAnimated.checked = (storedAnimated === 'true');
             }
 
-            loadGamesDb();
-            loadLocalData();
-            loadSafePlayers();
-            
-            renderSettingsGames();
-            setupEventListeners();
-            renderPlayers();
+            loadGamesDb(); loadLocalData(); loadSafePlayers();
+            renderSettingsGames(); setupEventListeners(); renderPlayers();
             loadRandomCharacter();
 
             window.addEventListener('storage', (e) => {
                 if (e.key === 'gachaGameData') loadLocalData();
-                if (e.key === 'gachaPlayers') {
-                    loadSafePlayers();
-                    renderPlayers();
-                }
-                if (e.key === 'gachaGamesDb') {
-                    loadGamesDb();
-                    renderSettingsGames();
-                }
+                if (e.key === 'gachaPlayers') { loadSafePlayers(); renderPlayers(); }
+                if (e.key === 'gachaGamesDb') { loadGamesDb(); renderSettingsGames(); }
             });
         }
 
@@ -606,7 +574,6 @@
             isLoading = true;
             isRevealed = false;
             hasAwarded = false; 
-            
             hintLevel = 0;
             hintPenalty = 0;
             
@@ -618,9 +585,9 @@
                 dom.hintDisplay.textContent = '';
             }
             
-            // ซ่อนรูปภาพและวิดีโอตอนโหลด
-            if(dom.img) { dom.img.style.opacity = 0; dom.img.style.display = 'none'; dom.img.src = ''; }
-            if(dom.video) { dom.video.style.opacity = 0; dom.video.style.display = 'none'; dom.video.src = ''; }
+            // ซ่อนสื่อโดยไม่ยุ่งกับตัวแปร src เดิม เพื่อป้องกัน Error ปลอม
+            if(dom.img) { dom.img.style.opacity = 0; dom.img.style.display = 'none'; }
+            if(dom.video) { dom.video.style.opacity = 0; dom.video.style.display = 'none'; dom.video.pause(); }
             
             if(dom.gridOverlay) dom.gridOverlay.innerHTML = ''; 
             if(dom.infoBox) dom.infoBox.classList.remove('revealed');
@@ -648,7 +615,6 @@
                 } else {
                     const randomGameObj = activeGames[Math.floor(Math.random() * activeGames.length)];
                     const searchTags = `solo ${randomGameObj.tag}`;
-                    
                     const randomPage = Math.floor(Math.random() * 20) + 1;
                     const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
                     
@@ -662,7 +628,7 @@
                         if (!(post.large_file_url || post.file_url)) return false;
                         if (post.file_ext === 'zip') return false; 
                         const isAnim = ['mp4', 'webm', 'gif'].includes(post.file_ext);
-                        if (!allowAnimated && isAnim) return false; // ถ้าปิดอนิเมชัน กรองทิ้ง
+                        if (!allowAnimated && isAnim) return false; 
                         return true;
                     });
 
@@ -672,9 +638,7 @@
                         return charName && !recentNames.includes(charName.toLowerCase());
                     });
 
-                    if (unplayedPosts.length > 0) {
-                        validPosts = unplayedPosts;
-                    }
+                    if (unplayedPosts.length > 0) validPosts = unplayedPosts;
 
                     if (validPosts.length > 0) {
                         const landscapePosts = validPosts.filter(p => p.image_width > p.image_height);
@@ -695,7 +659,6 @@
                             const fileUrl = randomPost.large_file_url || randomPost.file_url;
                             const isVideo = ['mp4', 'webm'].includes(randomPost.file_ext);
                             
-                            // สลับไปใช้ Video หรือ Image ตามประเภทไฟล์
                             if (isVideo) {
                                 dom.video.style.display = 'block';
                                 dom.video.src = fileUrl;
@@ -717,11 +680,11 @@
         }
 
         window.onloadLogic = () => {
-            if(!currentCharacter) return;
+            // ป้องกันเหตุการณ์โหลดซ้ำซ้อน
+            if(!currentCharacter || !isLoading) return;
             retryCount = 0; 
             if(dom.loading) dom.loading.classList.remove('show');
             
-            // เฟดโชว์สื่อที่กำลังเล่นอยู่
             if(dom.img && dom.img.style.display === 'block') dom.img.style.opacity = 1; 
             if(dom.video && dom.video.style.display === 'block') dom.video.style.opacity = 1; 
             
@@ -729,7 +692,10 @@
             isLoading = false;
         };
         
-        window.onerrorLogic = () => {
+        window.onerrorLogic = (e) => {
+            // เช็คว่ามี Source หรือไม่ ป้องกัน False Positive
+            const target = e.target;
+            if (!target || !target.src || target.src === window.location.href) return;
             handleAutoRetry("ไฟล์รูปหรือวิดีโอต้นทางเสียหาย หรือถูกบล็อก");
         };
 
@@ -1108,10 +1074,6 @@
             }
         };
 
-        function checkIfAllRevealed() {
-            if (unrevealedTiles.length === 0) revealCharacterInfo();
-        }
-
         function revealCharacterInfo() {
             if (isRevealed) return;
             isRevealed = true;
@@ -1131,7 +1093,6 @@
             if(dom.infoBox) dom.infoBox.classList.add('revealed');
             renderPlayers();
             
-            // เล่นวิดีโอต่อในกรณีเฉลย
             if (dom.video && dom.video.style.display === 'block') {
                 dom.video.play().catch(e => console.warn(e));
             }
@@ -1147,7 +1108,6 @@
             }
         }
 
-        // --- History Modal ---
         function openHistoryModal() {
             if(!dom.historyList) return;
             dom.historyList.innerHTML = '';
@@ -1158,7 +1118,6 @@
                     const li = document.createElement('li');
                     li.className = 'history-item';
                     
-                    // ป้องกัน History แสดงวิดีโอเสีย ใช้ภาพ Placeholder แทน
                     const isVideo = ['mp4', 'webm'].some(ext => item.url.includes(ext));
                     const imgHTML = isVideo ? `<div class="history-img" style="display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:#aaa;">▶ Video</div>` 
                                             : `<img src="${item.url}" alt="History Image" class="history-img" onerror="this.src='https://placehold.co/60x60/2d3436/0fb9b1?text=Error'">`;
@@ -1178,7 +1137,6 @@
         }
         function closeHistoryModal() { if(dom.historyModal) dom.historyModal.classList.remove('show'); }
 
-        // --- Settings Modal ---
         function openSettingsModal() {
             if(dom.settingsModal) dom.settingsModal.classList.add('show');
             if(dom.btnSettings) dom.btnSettings.blur();
@@ -1188,7 +1146,6 @@
         function setupEventListeners() {
             if(dom.toggleTimer) dom.toggleTimer.addEventListener('change', function() { resetTimerUI(); this.blur(); });
             
-            // อัปเดตตัวแปรบันทึกลงเครื่องเวลากดติ๊กเปิดปิดภาพเคลื่อนไหว
             if(dom.toggleAnimated) {
                 dom.toggleAnimated.addEventListener('change', function() { 
                     localStorage.setItem('gachaAllowAnimated', this.checked);
@@ -1214,7 +1171,8 @@
             }
             
             if(dom.video) {
-                dom.video.addEventListener('loadeddata', window.onloadLogic);
+                // เปลี่ยนจาก loadeddata เป็น canplay ซึ่งสอดคล้องกับจังหวะโหลดวิดีโอของเบราว์เซอร์มากกว่า
+                dom.video.addEventListener('canplay', window.onloadLogic);
                 dom.video.addEventListener('error', window.onerrorLogic);
             }
 
