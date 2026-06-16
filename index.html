@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v6.0 Modern UI</title>
+    <title>Gacha Guessing Game - v6.1 Advanced RNG</title>
     <style>
         :root {
             --bg-color-top: #2f3640;
@@ -19,7 +19,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            /* ปรับพื้นหลังให้มีมิติไล่สี */
             background: radial-gradient(circle at 50% 0%, var(--bg-color-top), var(--bg-color-bottom));
             color: var(--text-color);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -92,7 +91,6 @@
         }
         .btn-menu:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); }
 
-        /* Tactile Feedback สำหรับปุ่มทั้งหมด */
         button:active, .btn-menu:active { transform: scale(0.95); }
 
         .game-filter-container {
@@ -121,14 +119,13 @@
         .round-bonus-badge { background: rgba(254, 211, 48, 0.15); color: var(--edit-color); }
         .timer-badge { background: rgba(255, 255, 255, 0.05); color: var(--edit-color); }
 
-        /* ปรับปรุงพื้นที่แสดงภาพตรงกลางให้ใหญ่ขึ้น และดูพรีเมียม */
         #image-wrapper {
             position: relative; display: inline-flex; justify-content: center; align-items: center;
             min-width: 320px; min-height: 450px; max-height: 65vh; max-width: 100%;
             background-color: rgba(0, 0, 0, 0.3); border-radius: 12px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 20px rgba(15, 185, 177, 0.1); /* Glow Effect */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 20px rgba(15, 185, 177, 0.1); 
             border: 1px solid rgba(255, 255, 255, 0.08);
-            perspective: 1000px; /* รองรับ 3D Animation */
+            perspective: 1000px; 
         }
 
         #character-img {
@@ -142,12 +139,8 @@
             perspective: 1000px;
         }
 
-        /* ====================
-           3D Grid & Blurred Locked Tiles CSS
-           ==================== */
         .grid-tile { 
             background-color: #2d3436; border: 1px solid rgba(255,255,255,0.05); 
-            /* แอนิเมชัน 3 มิติ เด้งดึ๋งนุ่มนวล */
             transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease, background-color 0.2s ease, backdrop-filter 0.3s ease; 
             cursor: pointer; display: flex; justify-content: center; align-items: center;
             color: rgba(255, 255, 255, 0.3); font-size: 1.6rem; font-weight: bold; user-select: none; position: relative;
@@ -155,18 +148,13 @@
         }
         .grid-tile:hover { background-color: #353b48; color: rgba(255, 255, 255, 0.8); box-shadow: inset 0 0 15px rgba(0,0,0,0.3); }
         
-        /* คลาสใหม่สำหรับการเปิดป้าย (3D Flip) */
         .grid-tile.opened {
-            transform: rotateX(90deg) scale(0.8);
-            opacity: 0;
-            pointer-events: none;
+            transform: rotateX(90deg) scale(0.8); opacity: 0; pointer-events: none;
         }
 
         .grid-tile.locked {
-            background-color: transparent !important;
-            color: rgba(252, 92, 101, 0.5);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px); 
+            background-color: transparent !important; color: rgba(252, 92, 101, 0.5);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); 
         }
         .grid-tile.locked::after {
             content: "🔒"; position: absolute; font-size: 1.8rem; color: var(--danger-color);
@@ -334,7 +322,7 @@
         </div>
     </div>
 
-    <div class="app-version">v6.0 - Modern UI Update</div>
+    <div class="app-version">v6.1 - Advanced RNG & Orientation</div>
 
     <script>
         const GAME_TAGS = {
@@ -380,7 +368,6 @@
                 players = rawPlayers ? JSON.parse(rawPlayers) : [];
                 if (!Array.isArray(players)) players = [];
             } catch (e) {
-                console.warn("Player data corrupted, resetting...", e);
                 players = [];
                 localStorage.removeItem('gachaPlayers');
             }
@@ -392,7 +379,6 @@
                 localCharacters = rawData ? JSON.parse(rawData) : [];
                 if (!Array.isArray(localCharacters)) localCharacters = [];
             } catch (e) {
-                console.warn("Game data corrupted, resetting...", e);
                 localCharacters = [];
                 localStorage.removeItem('gachaGameData');
             }
@@ -508,7 +494,8 @@
                     const gameApiTag = GAME_TAGS[randomGame];
                     const searchTags = `solo ${gameApiTag}`;
                     
-                    const randomPage = Math.floor(Math.random() * 5) + 1;
+                    // เพิ่มวงค้นหาเป็นหน้า 1-20 (รูปภาพหลักพันรูป) เพื่อลดความซ้ำ
+                    const randomPage = Math.floor(Math.random() * 20) + 1;
                     const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
                     
                     const response = await fetch(targetApiUrl);
@@ -516,14 +503,38 @@
 
                     const data = await response.json();
                     
-                    const validPosts = data.filter(post => 
+                    let validPosts = data.filter(post => 
                         post.tag_string_character &&
                         (post.large_file_url || post.file_url) && 
                         !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)
                     );
 
+                    // ระบบความจำ (Memory Filter): ตัดตัวละครที่ซ้ำใน 15 รอบล่าสุดออก
+                    const recentNames = playHistory.slice(0, 15).map(h => h.name.toLowerCase());
+                    let unplayedPosts = validPosts.filter(post => {
+                        const charName = formatCharacterName(post.tag_string_character);
+                        return charName && !recentNames.includes(charName.toLowerCase());
+                    });
+
+                    // ถ้ายังมีรูปที่ไม่ซ้ำเหลืออยู่ ให้ใช้กลุ่มนั้นแทน
+                    if (unplayedPosts.length > 0) {
+                        validPosts = unplayedPosts;
+                    }
+
                     if (validPosts.length > 0) {
-                        const randomPost = validPosts[Math.floor(Math.random() * validPosts.length)];
+                        // ระบบแทรกแนวนอน (Landscape Injector)
+                        const landscapePosts = validPosts.filter(p => p.image_width > p.image_height);
+                        const portraitPosts = validPosts.filter(p => p.image_height >= p.image_width);
+
+                        let selectedPool = validPosts;
+                        // โอกาส 40% ที่จะพยายามดึงภาพแนวนอน
+                        if (Math.random() < 0.4 && landscapePosts.length > 0) {
+                            selectedPool = landscapePosts;
+                        } else if (portraitPosts.length > 0) {
+                            selectedPool = portraitPosts;
+                        }
+
+                        const randomPost = selectedPool[Math.floor(Math.random() * selectedPool.length)];
                         const extractedName = formatCharacterName(randomPost.tag_string_character);
                         
                         if (extractedName) {
@@ -603,7 +614,6 @@
                 }
                 
                 tile.addEventListener('click', function() {
-                    // เปลี่ยนจากการเช็ค opacity เป็นการเช็คคลาส opened
                     if (isRevealed || this.classList.contains('opened') || isLoading) return;
                     
                     if (this.dataset.isLocked === "true") {
@@ -624,7 +634,6 @@
                         }
                     }
 
-                    // ใช้คลาส .opened เพื่อเล่น 3D Animation
                     this.classList.add('opened');
                     const index = unrevealedTiles.indexOf(this);
                     if (index > -1) unrevealedTiles.splice(index, 1);
@@ -851,7 +860,7 @@
         function savePlayers() { 
             try {
                 localStorage.setItem('gachaPlayers', JSON.stringify(players)); 
-            } catch(e) { console.warn("Failed to save players", e); }
+            } catch(e) {}
         }
 
         function renderPlayers() {
