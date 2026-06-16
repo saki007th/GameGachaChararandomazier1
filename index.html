@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v7.0 Clean UI</title>
+    <title>Gacha Guessing Game - v7.1 Animated Support</title>
     <style>
         :root {
             --bg-color-top: #2f3640;
@@ -95,7 +95,7 @@
         #game-container {
             text-align: center; display: flex; flex-direction: column; align-items: center;
             width: 100%; max-width: 900px; padding: 20px; flex: 1; justify-content: center;
-            margin-top: 30px; /* ขยับลงมาเมื่อลบเมนูข้างบนออก */
+            margin-top: 30px; 
         }
 
         .status-badges { display: flex; gap: 15px; margin-bottom: 20px; }
@@ -116,8 +116,10 @@
             perspective: 1000px; 
         }
 
-        #character-img {
-            display: block; max-height: 65vh; max-width: 100%; width: auto; height: auto;
+        /* รองรับทั้งรูปภาพนิ่งและวิดีโอ */
+        #character-img, #character-video {
+            display: none; /* ควบคุมด้วย JS */
+            max-height: 65vh; max-width: 100%; width: auto; height: auto;
             object-fit: contain; pointer-events: none; user-select: none; border-radius: 12px; transition: opacity 0.4s ease;
         }
 
@@ -247,7 +249,6 @@
         </div>
     </div>
 
-    <!-- เมนูด้านขวาบน (ปรับรวมปุ่มตั้งค่า) -->
     <div class="top-menu">
         <button id="btn-history" class="btn-menu">🕒 ประวัติการทาย</button>
         <button id="btn-settings" class="btn-menu">⚙️ ตั้งค่าและจัดการข้อมูล</button>
@@ -267,6 +268,7 @@
                 <span id="loading-text">กำลังค้นหาตัวละครใหม่...</span>
             </div>
             <img id="character-img" src="" alt="Gacha Character">
+            <video id="character-video" autoplay loop muted playsinline></video>
             <div id="grid-overlay"></div>
         </div>
 
@@ -290,7 +292,6 @@
         </div>
     </div>
 
-    <!-- History Modal -->
     <div id="history-modal" class="modal-backdrop">
         <div class="modal-content">
             <div class="modal-header">
@@ -301,7 +302,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
     <div id="settings-modal" class="modal-backdrop">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
@@ -310,18 +310,23 @@
             </div>
             
             <div style="margin-bottom: 25px;">
-                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">⏳ ระบบเวลา</h3>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                    <input type="checkbox" id="toggle-timer" style="width: 18px; height: 18px; accent-color: var(--primary-color);" checked>
-                    <span style="font-size: 1.05rem;">เปิดฟังก์ชันจับเวลา 15 วินาที</span>
-                </label>
+                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">⏳ ระบบเวลา & แอนิเมชัน</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <input type="checkbox" id="toggle-timer" style="width: 18px; height: 18px; accent-color: var(--primary-color);" checked>
+                        <span style="font-size: 1.05rem;">เปิดฟังก์ชันจับเวลา 15 วินาที</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <input type="checkbox" id="toggle-animated" style="width: 18px; height: 18px; accent-color: var(--primary-color);" checked>
+                        <span style="font-size: 1.05rem;">เปิดระบบสุ่มภาพเคลื่อนไหว (Animated GIF/Video)</span>
+                    </label>
+                </div>
             </div>
 
             <div style="margin-bottom: 25px;">
                 <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">🎮 เลือกเกมที่จะสุ่ม</h3>
                 <div id="settings-game-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 5px;">
-                    <!-- เช็คบ็อกซ์เกมจะถูกสร้างที่นี่ -->
-                </div>
+                    </div>
             </div>
 
             <div>
@@ -336,7 +341,7 @@
         </div>
     </div>
 
-    <div class="app-version">v7.0 - Clean UI & Dynamic DB</div>
+    <div class="app-version">v7.1 - Animated Media Support</div>
 
     <script>
         // --- Game Database Setup ---
@@ -507,6 +512,7 @@
         function init() {
             dom = {
                 img: document.getElementById('character-img'),
+                video: document.getElementById('character-video'),
                 gridOverlay: document.getElementById('grid-overlay'),
                 infoBox: document.getElementById('character-info'),
                 nameDisplay: document.getElementById('char-name'),
@@ -530,12 +536,19 @@
                 roundBonusDisplay: document.getElementById('round-bonus-display'),
                 timerDisplay: document.getElementById('timer-display'),
                 toggleTimer: document.getElementById('toggle-timer'),
+                toggleAnimated: document.getElementById('toggle-animated'),
                 guessingSection: document.getElementById('guessing-section'),
                 guessInput: document.getElementById('guess-input'),
                 guessFeedback: document.getElementById('guess-feedback'),
                 btnHint: document.getElementById('btn-hint'),
                 hintDisplay: document.getElementById('hint-display')
             };
+
+            // โหลดตั้งค่า Animated Toggle
+            const storedAnimated = localStorage.getItem('gachaAllowAnimated');
+            if(storedAnimated !== null) {
+                dom.toggleAnimated.checked = (storedAnimated === 'true');
+            }
 
             loadGamesDb();
             loadLocalData();
@@ -605,7 +618,10 @@
                 dom.hintDisplay.textContent = '';
             }
             
-            if(dom.img) dom.img.style.opacity = 0; 
+            // ซ่อนรูปภาพและวิดีโอตอนโหลด
+            if(dom.img) { dom.img.style.opacity = 0; dom.img.style.display = 'none'; dom.img.src = ''; }
+            if(dom.video) { dom.video.style.opacity = 0; dom.video.style.display = 'none'; dom.video.src = ''; }
+            
             if(dom.gridOverlay) dom.gridOverlay.innerHTML = ''; 
             if(dom.infoBox) dom.infoBox.classList.remove('revealed');
             if(dom.loading) dom.loading.classList.add('show');
@@ -618,12 +634,17 @@
             const activeGameNames = activeGames.map(g => g.name);
             const localFiltered = localCharacters.filter(char => activeGameNames.includes(char.game));
             const pickFromLocal = (localFiltered.length > 0 && Math.random() < 0.15);
+            
+            const allowAnimated = dom.toggleAnimated ? dom.toggleAnimated.checked : false;
 
             try {
                 if (pickFromLocal) {
                     const localChar = localFiltered[Math.floor(Math.random() * localFiltered.length)];
                     currentCharacter = { name: localChar.name, game: localChar.game };
-                    if(dom.img) dom.img.src = localChar.url;
+                    if(dom.img) {
+                        dom.img.style.display = 'block';
+                        dom.img.src = localChar.url;
+                    }
                 } else {
                     const randomGameObj = activeGames[Math.floor(Math.random() * activeGames.length)];
                     const searchTags = `solo ${randomGameObj.tag}`;
@@ -636,11 +657,14 @@
 
                     const data = await response.json();
                     
-                    let validPosts = data.filter(post => 
-                        post.tag_string_character &&
-                        (post.large_file_url || post.file_url) && 
-                        !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)
-                    );
+                    let validPosts = data.filter(post => {
+                        if (!post.tag_string_character) return false;
+                        if (!(post.large_file_url || post.file_url)) return false;
+                        if (post.file_ext === 'zip') return false; 
+                        const isAnim = ['mp4', 'webm', 'gif'].includes(post.file_ext);
+                        if (!allowAnimated && isAnim) return false; // ถ้าปิดอนิเมชัน กรองทิ้ง
+                        return true;
+                    });
 
                     const recentNames = playHistory.slice(0, 15).map(h => h.name.toLowerCase());
                     let unplayedPosts = validPosts.filter(post => {
@@ -668,7 +692,17 @@
                         
                         if (extractedName) {
                             currentCharacter = { name: extractedName, game: randomGameObj.name };
-                            if(dom.img) dom.img.src = randomPost.large_file_url || randomPost.file_url;
+                            const fileUrl = randomPost.large_file_url || randomPost.file_url;
+                            const isVideo = ['mp4', 'webm'].includes(randomPost.file_ext);
+                            
+                            // สลับไปใช้ Video หรือ Image ตามประเภทไฟล์
+                            if (isVideo) {
+                                dom.video.style.display = 'block';
+                                dom.video.src = fileUrl;
+                            } else {
+                                dom.img.style.display = 'block';
+                                dom.img.src = fileUrl;
+                            }
                         } else {
                             throw new Error("สกัดชื่อตัวละครไม่สำเร็จ");
                         }
@@ -686,18 +720,23 @@
             if(!currentCharacter) return;
             retryCount = 0; 
             if(dom.loading) dom.loading.classList.remove('show');
-            if(dom.img) dom.img.style.opacity = 1; 
+            
+            // เฟดโชว์สื่อที่กำลังเล่นอยู่
+            if(dom.img && dom.img.style.display === 'block') dom.img.style.opacity = 1; 
+            if(dom.video && dom.video.style.display === 'block') dom.video.style.opacity = 1; 
+            
             createGrid();
             isLoading = false;
         };
         
         window.onerrorLogic = () => {
-            handleAutoRetry("ไฟล์รูปต้นทางเสียหาย หรือถูกบล็อก");
+            handleAutoRetry("ไฟล์รูปหรือวิดีโอต้นทางเสียหาย หรือถูกบล็อก");
         };
 
         function showError(message) {
             if(dom.loading) dom.loading.classList.remove('show');
             if(dom.img) dom.img.style.opacity = 0; 
+            if(dom.video) dom.video.style.opacity = 0; 
             unrevealedTiles = []; 
             if(dom.gridOverlay) dom.gridOverlay.innerHTML = `
                 <div style="background: rgba(252, 92, 101, 0.1); border: 2px dashed #fc5c65; border-radius: 12px; color: #fc5c65; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 30px; text-align: center;">
@@ -1092,9 +1131,18 @@
             if(dom.infoBox) dom.infoBox.classList.add('revealed');
             renderPlayers();
             
-            if (currentCharacter && dom.img && dom.img.src) {
-                if (playHistory.length === 0 || playHistory[0].url !== dom.img.src) {
-                    playHistory.unshift({ name: currentCharacter.name, game: currentCharacter.game, url: dom.img.src });
+            // เล่นวิดีโอต่อในกรณีเฉลย
+            if (dom.video && dom.video.style.display === 'block') {
+                dom.video.play().catch(e => console.warn(e));
+            }
+            
+            let displayUrl = '';
+            if (dom.img && dom.img.style.display === 'block') displayUrl = dom.img.src;
+            if (dom.video && dom.video.style.display === 'block') displayUrl = dom.video.src;
+            
+            if (currentCharacter && displayUrl) {
+                if (playHistory.length === 0 || playHistory[0].url !== displayUrl) {
+                    playHistory.unshift({ name: currentCharacter.name, game: currentCharacter.game, url: displayUrl });
                 }
             }
         }
@@ -1109,8 +1157,14 @@
                 playHistory.forEach((item) => {
                     const li = document.createElement('li');
                     li.className = 'history-item';
+                    
+                    // ป้องกัน History แสดงวิดีโอเสีย ใช้ภาพ Placeholder แทน
+                    const isVideo = ['mp4', 'webm'].some(ext => item.url.includes(ext));
+                    const imgHTML = isVideo ? `<div class="history-img" style="display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:#aaa;">▶ Video</div>` 
+                                            : `<img src="${item.url}" alt="History Image" class="history-img" onerror="this.src='https://placehold.co/60x60/2d3436/0fb9b1?text=Error'">`;
+                    
                     li.innerHTML = `
-                        <img src="${item.url}" alt="History Image" class="history-img" onerror="this.src='https://placehold.co/60x60/2d3436/0fb9b1?text=Error'">
+                        ${imgHTML}
                         <div class="history-info">
                             <strong>${item.name}</strong>
                             <small>${item.game}</small>
@@ -1134,6 +1188,14 @@
         function setupEventListeners() {
             if(dom.toggleTimer) dom.toggleTimer.addEventListener('change', function() { resetTimerUI(); this.blur(); });
             
+            // อัปเดตตัวแปรบันทึกลงเครื่องเวลากดติ๊กเปิดปิดภาพเคลื่อนไหว
+            if(dom.toggleAnimated) {
+                dom.toggleAnimated.addEventListener('change', function() { 
+                    localStorage.setItem('gachaAllowAnimated', this.checked);
+                    this.blur(); 
+                });
+            }
+            
             if(dom.btnHistory) dom.btnHistory.addEventListener('click', openHistoryModal);
             if(dom.closeHistoryBtn) dom.closeHistoryBtn.addEventListener('click', closeHistoryModal);
             
@@ -1149,6 +1211,11 @@
             if(dom.img) {
                 dom.img.addEventListener('load', window.onloadLogic);
                 dom.img.addEventListener('error', window.onerrorLogic);
+            }
+            
+            if(dom.video) {
+                dom.video.addEventListener('loadeddata', window.onloadLogic);
+                dom.video.addEventListener('error', window.onerrorLogic);
             }
 
             document.addEventListener('keydown', (e) => {
