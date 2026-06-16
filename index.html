@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v5.4 Hint System</title>
+    <title>Gacha Guessing Game - v5.4.1</title>
     <style>
         :root {
             --bg-color: #1e272e;
@@ -278,7 +278,7 @@
                 <input type="text" id="guess-input" placeholder="พิมพ์ชื่อตัวละครที่นี่..." autocomplete="off">
                 <button onclick="submitGuess()">ตอบ!</button>
             </div>
-            <button id="btn-hint" class="hint-btn" onclick="requestHint()">💡 ขอคำใบ้ (-2 โบนัส)</button>
+            <button id="btn-hint" class="hint-btn" onclick="requestHint()">💡 ขอคำใบ้ (-10 โบนัส)</button>
             <div class="hint-display" id="hint-display"></div>
             <div class="guess-feedback" id="guess-feedback"></div>
         </div>
@@ -293,7 +293,6 @@
         </div>
     </div>
 
-    <!-- History Modal -->
     <div id="history-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -304,7 +303,7 @@
         </div>
     </div>
 
-    <div class="app-version">v5.4 - Hint System added</div>
+    <div class="app-version">v5.4.1 - Hint System Adjusted</div>
 
     <script>
         const GAME_TAGS = {
@@ -315,7 +314,6 @@
             "Zenless Zone Zero": "zenless_zone_zero"
         };
 
-        // --- Safe Globals ---
         let localCharacters = []; 
         let currentCharacter = null;
         let isRevealed = false;
@@ -688,39 +686,38 @@
         }
 
         // ==========================================
-        // ระบบคำใบ้ (Hint System)
+        // ระบบคำใบ้ (Hint System) - Updated 5.4.1
         // ==========================================
         window.requestHint = function() {
             if (!currentCharacter || isRevealed || isLoading) return;
             
+            // จำกัดแค่ 3 ครั้ง
             if (hintLevel >= 3) {
                 if(dom.guessFeedback) {
-                    dom.guessFeedback.textContent = "⚠️ ใช้คำใบ้ครบสุดโควตาแล้ว!";
+                    dom.guessFeedback.textContent = "⚠️ ใช้คำใบ้ครบ 3 ครั้งแล้ว!";
                     dom.guessFeedback.style.color = "var(--edit-color)";
                 }
                 return;
             }
 
-            hintPenalty += 2;
+            hintPenalty += 10; // ใช้ 10 คะแนน
             hintLevel++;
             
             const name = currentCharacter.name;
             let result = "";
-            let isFirst = true;
+            let visibleCount = 0;
 
             for (let i = 0; i < name.length; i++) {
                 if (name[i] === ' ') {
                     result += '   '; 
-                    isFirst = true;
                 } else {
-                    if (hintLevel >= 2 && isFirst) {
+                    // เปิดตัวอักษรเรียงทีละตัวตามจำนวนครั้งที่กด
+                    if (visibleCount < hintLevel) {
                         result += name[i] + ' ';
-                    } else if (hintLevel >= 3 && i % 2 === 0) {
-                        result += name[i] + ' ';
+                        visibleCount++;
                     } else {
                         result += '_ ';
                     }
-                    isFirst = false;
                 }
             }
             
