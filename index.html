@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v6.1 Advanced RNG</title>
+    <title>Gacha Guessing Game - v7.0 Clean UI</title>
     <style>
         :root {
             --bg-color-top: #2f3640;
@@ -90,24 +90,12 @@
             padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 0.95rem; transition: all 0.2s; cursor: pointer; backdrop-filter: blur(5px);
         }
         .btn-menu:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); }
-
         button:active, .btn-menu:active { transform: scale(0.95); }
-
-        .game-filter-container {
-            margin-top: 30px; display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
-            background: rgba(0, 0, 0, 0.2); padding: 15px 25px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); z-index: 10;
-            backdrop-filter: blur(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .filter-label {
-            display: flex; align-items: center; gap: 8px; color: #d2dae2; cursor: pointer; font-size: 0.95rem; user-select: none; transition: color 0.2s;
-        }
-        .filter-label:hover { color: var(--text-color); }
-        .filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary-color); width: 16px; height: 16px; }
 
         #game-container {
             text-align: center; display: flex; flex-direction: column; align-items: center;
             width: 100%; max-width: 900px; padding: 20px; flex: 1; justify-content: center;
+            margin-top: 30px; /* ขยับลงมาเมื่อลบเมนูข้างบนออก */
         }
 
         .status-badges { display: flex; gap: 15px; margin-bottom: 20px; }
@@ -148,9 +136,7 @@
         }
         .grid-tile:hover { background-color: #353b48; color: rgba(255, 255, 255, 0.8); box-shadow: inset 0 0 15px rgba(0,0,0,0.3); }
         
-        .grid-tile.opened {
-            transform: rotateX(90deg) scale(0.8); opacity: 0; pointer-events: none;
-        }
+        .grid-tile.opened { transform: rotateX(90deg) scale(0.8); opacity: 0; pointer-events: none; }
 
         .grid-tile.locked {
             background-color: transparent !important; color: rgba(252, 92, 101, 0.5);
@@ -214,19 +200,23 @@
         .controls-hint { margin-top: 15px; padding: 12px 25px; background: rgba(0, 0, 0, 0.2); border-radius: 10px; color: #808e9b; font-size: 0.95rem; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.05); }
         kbd { background-color: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 6px; color: white; font-family: monospace; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
 
-        /* History Modal */
-        #history-modal {
+        /* Modals (History & Settings) */
+        .modal-backdrop {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85);
             display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px);
         }
-        #history-modal.show { opacity: 1; pointer-events: auto; }
+        .modal-backdrop.show { opacity: 1; pointer-events: auto; }
         .modal-content {
-            background: var(--bg-color-top); width: 90%; max-width: 550px; max-height: 80vh;
-            border-radius: 16px; padding: 30px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);
+            background: var(--bg-color-top); width: 90%; max-width: 550px; max-height: 85vh;
+            border-radius: 16px; padding: 30px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); overflow-y: auto;
         }
+        .modal-content::-webkit-scrollbar { width: 6px; }
+        .modal-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
         .close-btn { background: none; border: none; color: #aaa; font-size: 32px; cursor: pointer; line-height: 1; transition: 0.2s; }
         .close-btn:hover { color: var(--danger-color); transform: scale(1.1); }
+        
         .history-list { flex: 1; overflow-y: auto; list-style: none; padding-right: 5px; }
         .history-list::-webkit-scrollbar { width: 6px; }
         .history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
@@ -257,21 +247,10 @@
         </div>
     </div>
 
+    <!-- เมนูด้านขวาบน (ปรับรวมปุ่มตั้งค่า) -->
     <div class="top-menu">
         <button id="btn-history" class="btn-menu">🕒 ประวัติการทาย</button>
-        <a href="admin.html" id="admin-link" class="btn-menu">⚙️ จัดการข้อมูล</a>
-    </div>
-
-    <div class="game-filter-container" id="game-filters">
-        <label class="filter-label" style="margin-right: 15px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
-            <input type="checkbox" id="toggle-timer" checked> ⏳ เปิดจับเวลา 15 วิ
-        </label>
-        
-        <label class="filter-label"><input type="checkbox" value="Genshin Impact" checked> Genshin Impact</label>
-        <label class="filter-label"><input type="checkbox" value="Honkai: Star Rail" checked> Honkai: Star Rail</label>
-        <label class="filter-label"><input type="checkbox" value="Arknights" checked> Arknights</label>
-        <label class="filter-label"><input type="checkbox" value="Blue Archive" checked> Blue Archive</label>
-        <label class="filter-label"><input type="checkbox" value="Zenless Zone Zero" checked> Zenless Zone Zero</label>
+        <button id="btn-settings" class="btn-menu">⚙️ ตั้งค่าและจัดการข้อมูล</button>
     </div>
 
     <div id="game-container">
@@ -312,7 +291,7 @@
     </div>
 
     <!-- History Modal -->
-    <div id="history-modal">
+    <div id="history-modal" class="modal-backdrop">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>🕒 ประวัติการทาย (รอบนี้)</h2>
@@ -322,18 +301,54 @@
         </div>
     </div>
 
-    <div class="app-version">v6.1 - Advanced RNG & Orientation</div>
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>⚙️ ตั้งค่าและจัดการข้อมูล</h2>
+                <button class="close-btn" id="close-settings-btn">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">⏳ ระบบเวลา</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                    <input type="checkbox" id="toggle-timer" style="width: 18px; height: 18px; accent-color: var(--primary-color);" checked>
+                    <span style="font-size: 1.05rem;">เปิดฟังก์ชันจับเวลา 15 วินาที</span>
+                </label>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">🎮 เลือกเกมที่จะสุ่ม</h3>
+                <div id="settings-game-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 5px;">
+                    <!-- เช็คบ็อกซ์เกมจะถูกสร้างที่นี่ -->
+                </div>
+            </div>
+
+            <div>
+                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">➕ เพิ่มเกมใหม่เข้าระบบ</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="new-game-name" placeholder="ชื่อเกม (แสดงผล)" style="flex: 1; min-width: 150px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; outline: none;">
+                    <input type="text" id="new-game-tag" placeholder="Tag (เช่น azur_lane)" style="flex: 1; min-width: 150px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; outline: none;">
+                    <button onclick="addNewGame()" style="background: var(--primary-color); border: none; color: white; padding: 0 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">เพิ่ม</button>
+                </div>
+                <small style="color: #aaa; display: block; margin-top: 10px;">* โปรดใส่ Tag ภาษาอังกฤษให้ตรงกับฐานข้อมูลของเว็บไซต์ Safebooru</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-version">v7.0 - Clean UI & Dynamic DB</div>
 
     <script>
-        const GAME_TAGS = {
-            "Genshin Impact": "genshin_impact",
-            "Honkai: Star Rail": "honkai:_star_rail",
-            "Arknights": "arknights",
-            "Blue Archive": "blue_archive",
-            "Zenless Zone Zero": "zenless_zone_zero"
-        };
+        // --- Game Database Setup ---
+        const DEFAULT_GAMES = [
+            { id: 'def_1', name: "Genshin Impact", tag: "genshin_impact", active: true, isDefault: true },
+            { id: 'def_2', name: "Honkai: Star Rail", tag: "honkai:_star_rail", active: true, isDefault: true },
+            { id: 'def_3', name: "Arknights", tag: "arknights", active: true, isDefault: true },
+            { id: 'def_4', name: "Blue Archive", tag: "blue_archive", active: true, isDefault: true },
+            { id: 'def_5', name: "Zenless Zone Zero", tag: "zenless_zone_zero", active: true, isDefault: true }
+        ];
 
-        // --- Safe Globals ---
+        let gamesDb = [];
         let localCharacters = []; 
         let currentCharacter = null;
         let isRevealed = false;
@@ -348,8 +363,6 @@
 
         let timerInterval = null;
         let timeLeft = 15;
-
-        // Hint globals
         let hintLevel = 0;
         let hintPenalty = 0;
 
@@ -361,6 +374,113 @@
         const GRID_COLS = 6; 
 
         let dom = {};
+
+        function loadGamesDb() {
+            try {
+                const stored = localStorage.getItem('gachaGamesDb');
+                if (stored) {
+                    gamesDb = JSON.parse(stored);
+                } else {
+                    gamesDb = JSON.parse(JSON.stringify(DEFAULT_GAMES));
+                }
+            } catch(e) {
+                gamesDb = JSON.parse(JSON.stringify(DEFAULT_GAMES));
+            }
+        }
+
+        function saveGamesDb() {
+            localStorage.setItem('gachaGamesDb', JSON.stringify(gamesDb));
+        }
+
+        function renderSettingsGames() {
+            if(!dom.settingsGameList) return;
+            dom.settingsGameList.innerHTML = '';
+            gamesDb.forEach(g => {
+                const div = document.createElement('div');
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center';
+                div.style.background = 'rgba(0,0,0,0.2)';
+                div.style.padding = '8px 12px';
+                div.style.borderRadius = '8px';
+                div.style.border = '1px solid rgba(255,255,255,0.05)';
+
+                const label = document.createElement('label');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '10px';
+                label.style.cursor = 'pointer';
+                label.style.flex = '1';
+                label.style.overflow = 'hidden';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = g.active;
+                checkbox.style.width = '16px';
+                checkbox.style.height = '16px';
+                checkbox.style.accentColor = 'var(--primary-color)';
+                checkbox.onchange = (e) => {
+                    g.active = e.target.checked;
+                    saveGamesDb();
+                };
+
+                const span = document.createElement('span');
+                span.textContent = g.name;
+                span.style.whiteSpace = 'nowrap';
+                span.style.overflow = 'hidden';
+                span.style.textOverflow = 'ellipsis';
+                span.style.fontSize = '0.95rem';
+
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                div.appendChild(label);
+
+                if (!g.isDefault) {
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = '×';
+                    delBtn.style.background = 'none';
+                    delBtn.style.border = 'none';
+                    delBtn.style.color = 'var(--danger-color)';
+                    delBtn.style.fontSize = '1.4rem';
+                    delBtn.style.cursor = 'pointer';
+                    delBtn.style.padding = '0 5px';
+                    delBtn.style.transition = '0.2s';
+                    delBtn.onmouseover = () => delBtn.style.transform = 'scale(1.2)';
+                    delBtn.onmouseout = () => delBtn.style.transform = 'scale(1)';
+                    delBtn.onclick = () => {
+                        if(confirm(`ต้องการลบเกม "${g.name}" ออกจากระบบใช่หรือไม่?`)) {
+                            gamesDb = gamesDb.filter(game => game.id !== g.id);
+                            saveGamesDb();
+                            renderSettingsGames();
+                        }
+                    };
+                    div.appendChild(delBtn);
+                }
+
+                dom.settingsGameList.appendChild(div);
+            });
+        }
+
+        window.addNewGame = function() {
+            if(!dom.newGameName || !dom.newGameTag) return;
+            const name = dom.newGameName.value.trim();
+            const tag = dom.newGameTag.value.trim();
+            if(!name || !tag) {
+                alert('⚠️ กรุณากรอกทั้งชื่อเกมและ Tag ให้ครบถ้วน');
+                return;
+            }
+            gamesDb.push({
+                id: 'custom_' + Date.now(),
+                name: name,
+                tag: tag,
+                active: true,
+                isDefault: false
+            });
+            saveGamesDb();
+            renderSettingsGames();
+            dom.newGameName.value = '';
+            dom.newGameTag.value = '';
+        };
 
         function loadSafePlayers() {
             try {
@@ -393,11 +513,18 @@
                 gameDisplay: document.getElementById('char-game'),
                 loading: document.getElementById('loading-indicator'),
                 loadingText: document.getElementById('loading-text'),
-                filterCheckboxes: document.querySelectorAll('#game-filters input[type="checkbox"]'),
                 btnHistory: document.getElementById('btn-history'),
                 historyModal: document.getElementById('history-modal'),
                 closeHistoryBtn: document.getElementById('close-history-btn'),
                 historyList: document.getElementById('history-list'),
+                
+                btnSettings: document.getElementById('btn-settings'),
+                settingsModal: document.getElementById('settings-modal'),
+                closeSettingsBtn: document.getElementById('close-settings-btn'),
+                settingsGameList: document.getElementById('settings-game-list'),
+                newGameName: document.getElementById('new-game-name'),
+                newGameTag: document.getElementById('new-game-tag'),
+                
                 playersList: document.getElementById('players-list'),
                 newPlayerInput: document.getElementById('new-player-name'),
                 roundBonusDisplay: document.getElementById('round-bonus-display'),
@@ -410,8 +537,11 @@
                 hintDisplay: document.getElementById('hint-display')
             };
 
+            loadGamesDb();
             loadLocalData();
             loadSafePlayers();
+            
+            renderSettingsGames();
             setupEventListeners();
             renderPlayers();
             loadRandomCharacter();
@@ -421,6 +551,10 @@
                 if (e.key === 'gachaPlayers') {
                     loadSafePlayers();
                     renderPlayers();
+                }
+                if (e.key === 'gachaGamesDb') {
+                    loadGamesDb();
+                    renderSettingsGames();
                 }
             });
         }
@@ -450,9 +584,9 @@
         async function loadRandomCharacter() {
             if (isLoading) return;
 
-            const selectedGames = Array.from(dom.filterCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
-            if (selectedGames.length === 0) {
-                alert("กรุณาเลือกเกมอย่างน้อย 1 เกมครับ!");
+            const activeGames = gamesDb.filter(g => g.active);
+            if (activeGames.length === 0) {
+                alert("กรุณาเลือกเกมอย่างน้อย 1 เกมในหน้าต่างการตั้งค่าครับ!");
                 return;
             }
 
@@ -481,7 +615,8 @@
             
             if (retryCount === 0 && dom.loadingText) dom.loadingText.textContent = "กำลังค้นหาตัวละครแบบสุ่ม...";
 
-            const localFiltered = localCharacters.filter(char => selectedGames.includes(char.game));
+            const activeGameNames = activeGames.map(g => g.name);
+            const localFiltered = localCharacters.filter(char => activeGameNames.includes(char.game));
             const pickFromLocal = (localFiltered.length > 0 && Math.random() < 0.15);
 
             try {
@@ -490,11 +625,9 @@
                     currentCharacter = { name: localChar.name, game: localChar.game };
                     if(dom.img) dom.img.src = localChar.url;
                 } else {
-                    const randomGame = selectedGames[Math.floor(Math.random() * selectedGames.length)];
-                    const gameApiTag = GAME_TAGS[randomGame];
-                    const searchTags = `solo ${gameApiTag}`;
+                    const randomGameObj = activeGames[Math.floor(Math.random() * activeGames.length)];
+                    const searchTags = `solo ${randomGameObj.tag}`;
                     
-                    // เพิ่มวงค้นหาเป็นหน้า 1-20 (รูปภาพหลักพันรูป) เพื่อลดความซ้ำ
                     const randomPage = Math.floor(Math.random() * 20) + 1;
                     const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
                     
@@ -509,25 +642,21 @@
                         !['mp4', 'zip', 'gif', 'webm'].includes(post.file_ext)
                     );
 
-                    // ระบบความจำ (Memory Filter): ตัดตัวละครที่ซ้ำใน 15 รอบล่าสุดออก
                     const recentNames = playHistory.slice(0, 15).map(h => h.name.toLowerCase());
                     let unplayedPosts = validPosts.filter(post => {
                         const charName = formatCharacterName(post.tag_string_character);
                         return charName && !recentNames.includes(charName.toLowerCase());
                     });
 
-                    // ถ้ายังมีรูปที่ไม่ซ้ำเหลืออยู่ ให้ใช้กลุ่มนั้นแทน
                     if (unplayedPosts.length > 0) {
                         validPosts = unplayedPosts;
                     }
 
                     if (validPosts.length > 0) {
-                        // ระบบแทรกแนวนอน (Landscape Injector)
                         const landscapePosts = validPosts.filter(p => p.image_width > p.image_height);
                         const portraitPosts = validPosts.filter(p => p.image_height >= p.image_width);
 
                         let selectedPool = validPosts;
-                        // โอกาส 40% ที่จะพยายามดึงภาพแนวนอน
                         if (Math.random() < 0.4 && landscapePosts.length > 0) {
                             selectedPool = landscapePosts;
                         } else if (portraitPosts.length > 0) {
@@ -538,7 +667,7 @@
                         const extractedName = formatCharacterName(randomPost.tag_string_character);
                         
                         if (extractedName) {
-                            currentCharacter = { name: extractedName, game: randomGame };
+                            currentCharacter = { name: extractedName, game: randomGameObj.name };
                             if(dom.img) dom.img.src = randomPost.large_file_url || randomPost.file_url;
                         } else {
                             throw new Error("สกัดชื่อตัวละครไม่สำเร็จ");
@@ -970,6 +1099,7 @@
             }
         }
 
+        // --- History Modal ---
         function openHistoryModal() {
             if(!dom.historyList) return;
             dom.historyList.innerHTML = '';
@@ -992,14 +1122,23 @@
             if(dom.historyModal) dom.historyModal.classList.add('show');
             if(dom.btnHistory) dom.btnHistory.blur();
         }
-
         function closeHistoryModal() { if(dom.historyModal) dom.historyModal.classList.remove('show'); }
 
+        // --- Settings Modal ---
+        function openSettingsModal() {
+            if(dom.settingsModal) dom.settingsModal.classList.add('show');
+            if(dom.btnSettings) dom.btnSettings.blur();
+        }
+        function closeSettingsModal() { if(dom.settingsModal) dom.settingsModal.classList.remove('show'); }
+
         function setupEventListeners() {
-            if(dom.filterCheckboxes) dom.filterCheckboxes.forEach(cb => { cb.addEventListener('change', function() { this.blur(); }); });
             if(dom.toggleTimer) dom.toggleTimer.addEventListener('change', function() { resetTimerUI(); this.blur(); });
+            
             if(dom.btnHistory) dom.btnHistory.addEventListener('click', openHistoryModal);
             if(dom.closeHistoryBtn) dom.closeHistoryBtn.addEventListener('click', closeHistoryModal);
+            
+            if(dom.btnSettings) dom.btnSettings.addEventListener('click', openSettingsModal);
+            if(dom.closeSettingsBtn) dom.closeSettingsBtn.addEventListener('click', closeSettingsModal);
 
             if(dom.guessInput) {
                 dom.guessInput.addEventListener('keypress', function(e) {
@@ -1015,6 +1154,7 @@
             document.addEventListener('keydown', (e) => {
                 if (document.activeElement.tagName === 'INPUT') return;
                 if (dom.historyModal && dom.historyModal.classList.contains('show')) return; 
+                if (dom.settingsModal && dom.settingsModal.classList.contains('show')) return; 
 
                 if (e.code === 'Space') {
                     e.preventDefault(); 
