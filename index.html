@@ -150,7 +150,7 @@
         }
         .grid-tile.locked:hover::after { opacity: 1; transform: scale(1.25); }
 
-        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: rgba(252, 92, 101, 0.5) !important; background-color: rgba(252, 92, 101, 0.1) !important; }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: rgba(252, 92, 101, 0.5) !important; background-color: rgba(252, 92, 101, 0.1) !important; backdrop-filter: blur(15px) !important; -webkit-backdrop-filter: blur(15px) !important; }
         @keyframes shake {
             10%, 90% { transform: translate3d(-2px, 0, 0); }
             20%, 80% { transform: translate3d(3px, 0, 0); }
@@ -267,7 +267,7 @@
                 <span id="loading-text">กำลังค้นหาตัวละครใหม่...</span>
             </div>
             
-            <img id="character-img" alt="Gacha Character">
+            <img id="character-img" alt="Gacha Character" draggable="false">
             <video id="character-video" autoplay loop muted playsinline></video>
             
             <div id="grid-overlay"></div>
@@ -279,6 +279,7 @@
                 <button onclick="submitGuess()">ตอบ!</button>
             </div>
             <button id="btn-hint" class="hint-btn" onclick="requestHint()">💡 ขอคำใบ้ (-10 โบนัส)</button>
+            <button id="btn-peek" class="hint-btn" onclick="requestPeek()" style="border-color: #a29bfe; color: #a29bfe;">👁️ ขอแอบดูภาพ 1 ช่อง (-15 โบนัส)</button>
             <div class="hint-display" id="hint-display"></div>
             <div class="guess-feedback" id="guess-feedback"></div>
         </div>
@@ -289,7 +290,7 @@
         </div>
 
         <div class="controls-hint">
-            <kbd>คลิกป้าย</kbd> เปิดช่อง&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>R</kbd> เฉลย/ยอมแพ้&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Enter</kbd> สุ่มตัวถัดไป
+            <kbd>คลิกป้าย</kbd> เปิดช่อง&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Shift</kbd> + <kbd>R</kbd> เฉลย/ยอมแพ้&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Enter</kbd> สุ่มตัวถัดไป
         </div>
     </div>
 
@@ -372,11 +373,12 @@
         let timeLeft = 15;
         let hintLevel = 0;
         let hintPenalty = 0;
+        let isPeekMode = false; // ระบบเช็คสถานะการแอบดูภาพ
 
         const UNLOCK_THRESHOLD = 12;
         const LOCKED_COUNT = 6; 
         const PENALTY_POINTS = 5; 
-        const MAX_RETRIES = 15; // เพิ่มโอกาสให้ระบบหาของแปลกๆ ให้เจอ
+        const MAX_RETRIES = 15; 
         const GRID_ROWS = 6; 
         const GRID_COLS = 6; 
 
@@ -471,7 +473,6 @@
                 if (!Array.isArray(localCharacters)) localCharacters = [];
             } catch (e) { localCharacters = []; localStorage.removeItem('gachaGameData'); }
             
-            // โหลดความจำ 50 ตัวล่าสุด
             try {
                 const memory = localStorage.getItem('gachaSeenCharacters');
                 seenCharacters = memory ? JSON.parse(memory) : [];
@@ -537,7 +538,6 @@
                 isLoading = false; 
                 setTimeout(() => loadRandomCharacter(), 800);
             } else {
-                // เคลียร์ความจำครึ่งนึงหากถึงทางตัน (ป้องกันลูปนรกกรณีเกมมีตัวละครน้อย)
                 if (seenCharacters.length > 0) {
                     seenCharacters = seenCharacters.slice(Math.floor(seenCharacters.length / 2));
                     localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
@@ -557,7 +557,7 @@
             }
 
             isLoading = true; isRevealed = false; hasAwarded = false; 
-            hintLevel = 0; hintPenalty = 0;
+            hintLevel = 0; hintPenalty = 0; isPeekMode = false;
             
             if(dom.guessInput) dom.guessInput.value = '';
             if(dom.guessFeedback) dom.guessFeedback.textContent = '';
@@ -586,7 +586,6 @@
                     currentCharacter = { name: localChar.name, game: localChar.game };
                     if(dom.img) { dom.img.style.display = 'block'; dom.img.src = localChar.url; }
                     
-                    // บันทึกลง Memory
                     seenCharacters.push(currentCharacter.name.toLowerCase());
                     if (seenCharacters.length > 50) seenCharacters.shift();
                     localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
@@ -603,7 +602,7 @@
                         randomPage = Math.floor(Math.random() * 2) + 1; 
                     } else {
                         searchTags += ` solo`; 
-                        randomPage = Math.floor(Math.random() * 100) + 1; // ขยายความลึกเป็น 100 หน้า!
+                        randomPage = Math.floor(Math.random() * 100) + 1; 
                     }
 
                     const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
@@ -622,13 +621,11 @@
                         return true;
                     });
 
-                    // ระบบความจำ (Strict Filter): ตัด 50 ตัวล่าสุดออกไปเลย!
                     let unplayedPosts = validPosts.filter(post => {
                         const charName = formatCharacterName(post.tag_string_character);
                         return charName && !seenCharacters.includes(charName.toLowerCase());
                     });
 
-                    // ถ้ารอบนี้มีแต่ตัวซ้ำ ให้เตะทิ้งทั้งหน้า แล้วโยน Error เพื่อวิ่งไปหาหน้าใหม่ทันที
                     if (unplayedPosts.length > 0) {
                         validPosts = unplayedPosts;
                     } else {
@@ -657,9 +654,8 @@
                                 dom.img.style.display = 'block'; dom.img.src = fileUrl;
                             }
 
-                            // บันทึกลง Memory ทันทีที่สุ่มเจอ (ไม่ต้องรอให้กดเฉลย)
                             seenCharacters.push(currentCharacter.name.toLowerCase());
-                            if (seenCharacters.length > 50) seenCharacters.shift(); // จำแค่ 50 ตัวล่าสุดพอ
+                            if (seenCharacters.length > 50) seenCharacters.shift(); 
                             localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
 
                         } else { throw new Error("สกัดชื่อตัวละครไม่สำเร็จ"); }
@@ -711,6 +707,12 @@
             renderPlayers();
         }
 
+        function checkIfAllRevealed() {
+            if (unrevealedTiles.length === 0 && !isRevealed) {
+                revealAll();
+            }
+        }
+
         function createGrid() {
             if(!dom.gridOverlay) return;
             dom.gridOverlay.innerHTML = '';
@@ -739,6 +741,27 @@
                 tile.addEventListener('click', function() {
                     if (isRevealed || this.classList.contains('opened') || isLoading) return;
                     
+                    if (isPeekMode) {
+                        this.classList.add('opened');
+                        const index = unrevealedTiles.indexOf(this);
+                        if (index > -1) unrevealedTiles.splice(index, 1);
+                        
+                        hintPenalty += 15; 
+                        isPeekMode = false; 
+                        
+                        if(dom.guessFeedback) {
+                            dom.guessFeedback.textContent = "👁️ แอบดูสำเร็จ! (-15 โบนัส)";
+                            dom.guessFeedback.style.color = "#a29bfe";
+                            setTimeout(() => { 
+                                if(dom.guessFeedback.textContent.includes("แอบดูสำเร็จ")) dom.guessFeedback.textContent = ""; 
+                            }, 2500);
+                        }
+                        
+                        updateLockedTilesVisuals(); renderPlayers(); startTimer(); 
+                        try { checkIfAllRevealed(); } catch(e) {}
+                        return; 
+                    }
+
                     if (this.dataset.isLocked === "true") {
                         const openedCount = totalTilesCount - unrevealedTiles.length;
                         if (openedCount < UNLOCK_THRESHOLD) {
@@ -862,6 +885,17 @@
             }
             if(dom.hintDisplay) { dom.hintDisplay.textContent = result.trim(); dom.hintDisplay.style.display = 'block'; }
             renderPlayers();
+        };
+
+        window.requestPeek = function() {
+            if (!currentCharacter || isRevealed || isLoading) return;
+            
+            isPeekMode = true;
+            
+            if(dom.guessFeedback) {
+                dom.guessFeedback.textContent = "👁️ โหมดแอบดู: คลิกที่แผ่นป้าย 1 ช่องเพื่อเปิด (แม้จะติดล็อกก็เปิดได้)!";
+                dom.guessFeedback.style.color = "#a29bfe";
+            }
         };
 
         window.submitGuess = function() {
@@ -1008,7 +1042,6 @@
             if (dom.video && dom.video.style.display === 'block') displayUrl = dom.video.src;
             
             if (currentCharacter && displayUrl) {
-                // บันทึกเฉพาะรูปลงในประวัติ History การเล่น
                 if (playHistory.length === 0 || playHistory[0].url !== displayUrl) {
                     playHistory.unshift({ name: currentCharacter.name, game: currentCharacter.game, url: displayUrl });
                 }
@@ -1054,12 +1087,23 @@
             if(dom.video) { dom.video.addEventListener('canplay', window.onloadLogic); dom.video.addEventListener('error', window.onerrorLogic); }
 
             document.addEventListener('keydown', (e) => {
-                if (document.activeElement.tagName === 'INPUT') return;
+                const activeTag = document.activeElement.tagName;
+                if (activeTag === 'INPUT' || activeTag === 'BUTTON') return;
+                
                 if (dom.historyModal && dom.historyModal.classList.contains('show')) return; 
                 if (dom.settingsModal && dom.settingsModal.classList.contains('show')) return; 
 
-                if (e.code === 'Space') { e.preventDefault(); if (!isRevealed) openRandomTile(); } 
-                else if (e.code === 'KeyR') { e.preventDefault(); revealAll(); } 
+                if (e.code === 'Space') { 
+                    e.preventDefault(); 
+                    if (e.repeat) return;
+                    if (!isRevealed) openRandomTile(); 
+                } 
+                else if (e.code === 'KeyR') { 
+                    if (e.shiftKey) {
+                        e.preventDefault(); 
+                        revealAll(); 
+                    }
+                } 
                 else if (e.code === 'Enter') {
                     e.preventDefault();
                     if (!isRevealed && currentCharacter) { unrevealedTiles = []; revealAll(); }
