@@ -271,25 +271,29 @@ kbd {
     font-weight: bold;
     user-select: none;
     cursor: pointer;
+    opacity: 1;
     transform-origin: center;
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease,
-        background-color 0.2s ease, backdrop-filter 0.3s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 .grid-tile:hover { background: #353b48; color: rgba(255, 255, 255, 0.8); }
-.grid-tile.opened { transform: rotateX(90deg) scale(0.8); opacity: 0; pointer-events: none; }
+.grid-tile.opened {
+    transform: rotateX(90deg) scale(0.8);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+}
 
 .grid-tile.locked,
 .grid-tile.locked:hover {
-    background: transparent;
-    color: rgba(252, 92, 101, 0.5);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    background: #1f2428;
+    border-color: rgba(252, 92, 101, 0.22);
+    color: rgba(252, 92, 101, 0.45);
 }
 .grid-tile.locked::after {
     content: "🔒";
     position: absolute;
     font-size: 1.4em;
-    opacity: 0.8;
+    opacity: 0.85;
     pointer-events: none;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
     transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -298,8 +302,8 @@ kbd {
 
 .grid-tile.shake {
     animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-    background: rgba(252, 92, 101, 0.1);
-    border-color: rgba(252, 92, 101, 0.5);
+    background: #3d2226;
+    border-color: rgba(252, 92, 101, 0.65);
 }
 
 @keyframes shake {
@@ -312,12 +316,12 @@ kbd {
 .loading {
     position: absolute;
     inset: 0;
-    z-index: 2;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.25);
+    background: #1e272e;
     color: var(--primary);
     font-weight: bold;
 }
@@ -714,7 +718,12 @@ kbd {
 }
 #stage.locked-for-turn .grid-tile:not(.opened) {
     cursor: not-allowed;
-    opacity: 0.88;
+    background: #262c2e;
+    color: rgba(255, 255, 255, 0.2);
+}
+#stage.locked-for-turn .grid-tile.locked:not(.opened) {
+    background: #1c2125;
+    color: rgba(252, 92, 101, 0.38);
 }
 
 .turn-banner {
