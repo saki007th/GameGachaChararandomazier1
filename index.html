@@ -3,1116 +3,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Guessing Game - v7.5 Strict Memory</title>
-    <style>
-        :root {
-            --bg-color-top: #2f3640;
-            --bg-color-bottom: #1e272e;
-            --text-color: #ffffff;
-            --primary-color: #0fb9b1;
-            --danger-color: #fc5c65;
-            --success-color: #20bf6b;
-            --edit-color: #fed330;
-            --panel-bg: rgba(45, 52, 54, 0.85);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background: radial-gradient(circle at 50% 0%, var(--bg-color-top), var(--bg-color-bottom));
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* ====================
-           Scoreboard System
-           ==================== */
-        .scoreboard-container {
-            position: absolute; top: 20px; left: 20px; background: var(--panel-bg);
-            border-radius: 12px; padding: 15px; width: 280px; 
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255, 255, 255, 0.08); z-index: 100; max-height: 80vh;
-            display: flex; flex-direction: column; backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        .scoreboard-header {
-            margin-bottom: 12px; font-size: 1.1rem; color: var(--primary-color);
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .player-list { flex: 1; overflow-y: auto; list-style: none; margin-bottom: 10px; }
-        .player-list::-webkit-scrollbar { width: 5px; }
-        .player-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-        
-        .player-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.2); padding: 10px 12px; margin-bottom: 8px;
-            border-radius: 8px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s ease;
-        }
-        .player-item:hover { background: rgba(255,255,255,0.05); transform: translateX(2px); }
-        .player-item.active { border-left-color: var(--primary-color); background: rgba(15, 185, 177, 0.15); box-shadow: inset 0 0 10px rgba(15, 185, 177, 0.1); }
-        .player-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; }
-        .player-score { font-weight: bold; color: var(--edit-color); font-size: 1.2rem; margin-left: 10px; transition: color 0.3s; }
-        .player-score.negative { color: var(--danger-color); }
-        
-        .add-player-box { display: flex; gap: 8px; }
-        .add-player-box input {
-            flex: 1; padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; width: 100%; outline: none; transition: 0.2s;
-        }
-        .add-player-box input:focus { border-color: var(--primary-color); background: rgba(0,0,0,0.5); }
-        .add-player-box button {
-            background: var(--primary-color); border: none; color: white; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
-        }
-
-        .award-btn {
-            background: var(--success-color); border: none; color: white;
-            padding: 6px 10px; border-radius: 6px; font-size: 0.85rem;
-            cursor: pointer; display: none; font-weight: bold; margin-left: 10px;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 10px rgba(32, 191, 107, 0.3);
-        }
-        .award-btn:hover { background: #2ed573; transform: scale(1.05); }
-        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-        
-        .player-item.can-award .award-btn { display: block; }
-        .player-item.can-award .delete-btn { display: none; }
-        .delete-btn { background: none; border: none; color: #fc5c65; cursor: pointer; margin-left: 8px; font-size: 1.2rem; opacity: 0.5; transition: 0.2s; }
-        .delete-btn:hover { opacity: 1; transform: scale(1.2); }
-
-        .top-menu { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; align-items: center; z-index: 100; }
-        .btn-menu {
-            background: rgba(255, 255, 255, 0.05); color: var(--text-color); border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 0.95rem; transition: all 0.2s; cursor: pointer; backdrop-filter: blur(5px);
-        }
-        .btn-menu:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); }
-        button:active, .btn-menu:active { transform: scale(0.95); }
-
-        #game-container {
-            text-align: center; display: flex; flex-direction: column; align-items: center;
-            width: 100%; max-width: 900px; padding: 20px; flex: 1; justify-content: center;
-            margin-top: 30px; 
-        }
-
-        .status-badges { display: flex; gap: 15px; margin-bottom: 20px; }
-        .round-bonus-badge, .timer-badge {
-            padding: 10px 30px; border-radius: 30px; font-size: 1.25rem; font-weight: bold;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2); display: inline-block; transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);
-        }
-        .round-bonus-badge { background: rgba(254, 211, 48, 0.15); color: var(--edit-color); }
-        .timer-badge { background: rgba(255, 255, 255, 0.05); color: var(--edit-color); }
-
-        #image-wrapper {
-            position: relative; display: inline-flex; justify-content: center; align-items: center;
-            min-width: 320px; min-height: 450px; max-height: 65vh; max-width: 100%;
-            background-color: rgba(0, 0, 0, 0.3); border-radius: 12px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 20px rgba(15, 185, 177, 0.1); 
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            perspective: 1000px; 
-        }
-
-        #character-img, #character-video {
-            display: none; 
-            max-height: 65vh; max-width: 100%; width: auto; height: auto;
-            object-fit: contain; pointer-events: none; user-select: none; border-radius: 12px; transition: opacity 0.4s ease;
-        }
-
-        #grid-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            display: grid; border-radius: 12px; overflow: hidden;
-            perspective: 1000px;
-        }
-
-        .grid-tile { 
-            background-color: #2d3436; border: 1px solid rgba(255,255,255,0.05); 
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease, background-color 0.2s ease, backdrop-filter 0.3s ease; 
-            cursor: pointer; display: flex; justify-content: center; align-items: center;
-            color: rgba(255, 255, 255, 0.3); font-size: 1.6rem; font-weight: bold; user-select: none; position: relative;
-            transform-origin: center;
-        }
-        .grid-tile:hover { background-color: #353b48; color: rgba(255, 255, 255, 0.8); box-shadow: inset 0 0 15px rgba(0,0,0,0.3); }
-        
-        .grid-tile.opened { transform: rotateX(90deg) scale(0.8); opacity: 0; pointer-events: none; }
-
-        .grid-tile.locked {
-            background-color: transparent !important; color: rgba(252, 92, 101, 0.5);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); 
-        }
-        .grid-tile.locked::after {
-            content: "🔒"; position: absolute; font-size: 1.8rem; color: var(--danger-color);
-            opacity: 0.8; pointer-events: none; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-        }
-        .grid-tile.locked:hover::after { opacity: 1; transform: scale(1.25); }
-
-        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: rgba(252, 92, 101, 0.5) !important; background-color: rgba(252, 92, 101, 0.1) !important; backdrop-filter: blur(15px) !important; -webkit-backdrop-filter: blur(15px) !important; }
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-2px, 0, 0); }
-            20%, 80% { transform: translate3d(3px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
-            40%, 60% { transform: translate3d(5px, 0, 0); }
-        }
-
-        #loading-indicator {
-            position: absolute; display: flex; flex-direction: column; justify-content: center;
-            align-items: center; color: var(--primary-color); font-weight: bold; font-size: 1.1rem;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-        #loading-indicator.show { opacity: 1; }
-        .spinner {
-            width: 45px; height: 45px; border: 4px solid rgba(15, 185, 177, 0.2); border-top: 4px solid var(--primary-color); border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 15px; box-shadow: 0 0 15px rgba(15, 185, 177, 0.3);
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Guessing System & Hint UI */
-        .guessing-section { margin-top: 25px; display: flex; gap: 12px; width: 100%; max-width: 450px; align-items: center; flex-direction: column; }
-        .guessing-input-group { display: flex; gap: 10px; width: 100%; }
-        .guessing-input-group input {
-            flex: 1; padding: 14px 18px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); color: white; font-size: 1.15rem; outline: none; text-align: center; transition: 0.3s; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
-        }
-        .guessing-input-group input:focus { border-color: var(--primary-color); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(15, 185, 177, 0.2); }
-        .guessing-input-group button {
-            background: var(--primary-color); border: none; color: white; padding: 0 25px; border-radius: 10px; font-size: 1.15rem; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(15, 185, 177, 0.3);
-        }
-        .guessing-input-group button:hover { background: #0c9c95; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(15, 185, 177, 0.4); }
-        
-        .hint-btn {
-            background: transparent; border: 2px solid var(--edit-color); color: var(--edit-color);
-            padding: 8px 20px; border-radius: 25px; font-size: 0.95rem; margin-top: 5px; cursor: pointer; transition: 0.3s; font-weight: bold;
-        }
-        .hint-btn:hover { background: rgba(254, 211, 48, 0.15); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(254, 211, 48, 0.2); }
-        .hint-display {
-            font-size: 1.6rem; letter-spacing: 3px; color: var(--edit-color); margin-top: 10px; font-family: 'Courier New', Courier, monospace; display: none; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 10px 25px; border-radius: 8px; border: 1px dashed rgba(254, 211, 48, 0.3);
-        }
-
-        .guess-feedback { font-weight: bold; font-size: 1.1rem; height: 25px; transition: 0.2s; margin-top: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-
-        #character-info { margin-top: 20px; opacity: 0; transform: translateY(15px); transition: opacity 0.5s ease, transform 0.5s ease; height: 90px; }
-        #character-info.revealed { opacity: 1; transform: translateY(0); }
-        #char-name { font-size: 2.8rem; margin-bottom: 5px; color: var(--primary-color); text-shadow: 0 4px 8px rgba(0,0,0,0.6); letter-spacing: 1px; }
-        #char-game { font-size: 1.3rem; color: #d2dae2; opacity: 0.9; }
-
-        .controls-hint { margin-top: 15px; padding: 12px 25px; background: rgba(0, 0, 0, 0.2); border-radius: 10px; color: #808e9b; font-size: 0.95rem; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.05); }
-        kbd { background-color: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 6px; color: white; font-family: monospace; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
-
-        /* Modals (History & Settings) */
-        .modal-backdrop {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85);
-            display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px);
-        }
-        .modal-backdrop.show { opacity: 1; pointer-events: auto; }
-        .modal-content {
-            background: var(--bg-color-top); width: 90%; max-width: 550px; max-height: 85vh;
-            border-radius: 16px; padding: 30px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); overflow-y: auto;
-        }
-        .modal-content::-webkit-scrollbar { width: 6px; }
-        .modal-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
-        .close-btn { background: none; border: none; color: #aaa; font-size: 32px; cursor: pointer; line-height: 1; transition: 0.2s; }
-        .close-btn:hover { color: var(--danger-color); transform: scale(1.1); }
-        
-        .history-list { flex: 1; overflow-y: auto; list-style: none; padding-right: 5px; }
-        .history-list::-webkit-scrollbar { width: 6px; }
-        .history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-        .history-item {
-            display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.2); padding: 12px; margin-bottom: 12px;
-            border-radius: 10px; border-left: 4px solid var(--primary-color); transition: 0.2s;
-        }
-        .history-item:hover { background: rgba(0,0,0,0.4); transform: translateX(3px); }
-        .history-img { width: 65px; height: 65px; border-radius: 8px; object-fit: cover; background: #000; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-        .history-info { display: flex; flex-direction: column; overflow: hidden; }
-        .history-info strong { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary-color); margin-bottom: 3px; }
-        .history-info small { color: #d2dae2; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
-
-        .app-version { position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.2); pointer-events: none; }
-    </style>
+    <title>Gacha Guessing Game</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <div class="scoreboard-container">
-        <div class="scoreboard-header">
-            <span>👥 ผู้เล่น & คะแนน</span>
-            <button style="background:none; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; opacity:0.8; transition:0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'" onclick="resetScores()">รีเซ็ต</button>
-        </div>
-        <ul class="player-list" id="players-list"></ul>
-        <div class="add-player-box">
-            <input type="text" id="new-player-name" placeholder="เพิ่มชื่อผู้เล่น..." onkeypress="if(event.key === 'Enter') addPlayer()">
-            <button onclick="addPlayer()">+</button>
+    <!-- หน้าหลักก่อนเข้าห้อง (Home / Room Browser Lobby) -->
+    <div id="home-screen" class="home-screen">
+        <div class="lobby-shell">
+            <header class="lobby-hero">
+                <div class="lobby-brand">
+                    <span class="lobby-brand__logo">🎴</span>
+                    <div>
+                        <h1>Gacha Guess <small>Co-op v9</small></h1>
+                        <p>เกมทายตัวละครกาชาแบบผลัดกันเปิดป้าย 1 ช่อง • ทายภายใน 15 วินาที • แย่งกันทำแต้ม!</p>
+                    </div>
+                </div>
+
+                <div class="lobby-profile">
+                    <label for="lobby-player-name">👤 ชื่อผู้เล่นของคุณ</label>
+                    <input type="text" id="lobby-player-name" placeholder="ตั้งชื่อของคุณก่อนเข้าห้อง..." maxlength="24" autocomplete="off">
+                </div>
+            </header>
+
+            <!-- แบนเนอร์แจ้งเตือนเมื่อเปิดเข้ามาจากลิงก์เชิญ ?room=XXXX -->
+            <div id="lobby-invite-banner" class="lobby-invite-banner" hidden>
+                <div>
+                    <strong>📩 คุณได้รับคำเชิญเข้าร่วมห้อง <span id="lobby-invite-code">#------</span></strong>
+                    <small>กรอกชื่อผู้เล่นด้านบน แล้วกดปุ่มเข้าร่วมได้ทันที</small>
+                </div>
+                <button id="btn-accept-invite" class="btn-join-room" type="button">เข้าร่วมห้องนี้ทันที ➡️</button>
+            </div>
+
+            <div class="lobby-main">
+                <!-- คอลัมน์ซ้าย: ระบบแสดงรายการห้องที่เปิดอยู่ -->
+                <section class="lobby-rooms-panel">
+                    <header class="lobby-panel__head">
+                        <div>
+                            <h2>📡 ห้องที่เปิดอยู่ตอนนี้</h2>
+                            <span id="lobby-room-count" class="room-count-pill">0 ห้องที่เปิดอยู่</span>
+                        </div>
+                        <button id="btn-refresh-rooms" class="btn-ghost" type="button">🔄 รีเฟรช</button>
+                    </header>
+
+                    <div id="lobby-room-list" class="lobby-room-list"></div>
+                </section>
+
+                <!-- คอลัมน์ขวา: สร้างห้องใหม่ / เข้าร่วมด้วยรหัส / เล่นจอเดียว -->
+                <aside class="lobby-actions-panel">
+                    <div class="lobby-action-card lobby-action-card--highlight">
+                        <h3>🚀 สร้างห้อง Co-op ใหม่</h3>
+                        <p>เปิดห้องเป็น Host ให้เพื่อนเห็นในรายการห้อง หรือแชร์รหัส 6 หลักให้เพื่อนจอย</p>
+                        <form id="lobby-create-form" class="lobby-form" autocomplete="off">
+                            <input type="text" id="lobby-room-title" placeholder="ตั้งชื่อห้อง (เช่น ห้องทายกาชาสุดมันส์)" maxlength="36">
+                            <label class="lobby-check">
+                                <input type="checkbox" id="lobby-host-play" checked>
+                                <span>ลงเล่นในคิวผู้เล่นด้วย</span>
+                            </label>
+                            <button class="btn-primary-full" type="submit">🚀 สร้างห้องและเริ่มเกม</button>
+                        </form>
+                    </div>
+
+                    <div class="lobby-action-card">
+                        <h3>🔑 เข้าร่วมด้วยรหัสห้อง</h3>
+                        <p>หากเพื่อนส่งรหัสห้อง 6 หลักมาให้ สามารถกรอกเพื่อเข้าห้องได้โดยตรง</p>
+                        <form id="lobby-code-form" class="lobby-code-row" autocomplete="off">
+                            <input type="text" id="lobby-code-input" placeholder="รหัสห้อง (เช่น AB12CD)" maxlength="8">
+                            <button type="submit">🔗 เข้าร่วม</button>
+                        </form>
+                    </div>
+
+                    <div class="lobby-action-card">
+                        <h3>🖥️ เล่นจอเดียวกัน (Local Co-op)</h3>
+                        <p>ผลัดกันเปิดป้ายและทายบนหน้าจอเดียวกันโดยไม่ต้องเปิดห้องออนไลน์</p>
+                        <button id="btn-lobby-local" class="btn-secondary-full" type="button">🎮 เข้าสู่โหมดจอเดียว</button>
+                    </div>
+                </aside>
+            </div>
         </div>
     </div>
 
-    <div class="top-menu">
-        <button id="btn-history" class="btn-menu">🕒 ประวัติการทาย</button>
-        <button id="btn-settings" class="btn-menu">⚙️ ตั้งค่าและจัดการข้อมูล</button>
+    <div id="app-screen" class="app" hidden>
+
+        <header class="topbar">
+            <div class="brand-group">
+                <button id="btn-home" class="btn-home" type="button" title="กลับสู่หน้าหลัก (รายการห้อง)">🏠 หน้าหลัก</button>
+                <div class="brand">🎴 Gacha Guess <small>v9</small></div>
+            </div>
+
+            <div class="stats">
+                <div class="badge badge--bonus" title="โบนัสของรอบนี้">
+                    🏆 <span id="bonus-value">0</span>
+                </div>
+                <div class="badge badge--timer" id="timer">⏳ รอเปิดป้าย...</div>
+                <div class="badge badge--turn" id="turn-badge" data-tone="info">👥 โหมดอิสระ</div>
+            </div>
+
+            <div class="toolbar">
+                <button id="btn-coop" class="btn-coop" type="button">🌐 ห้อง Co-op / หลายจอ</button>
+                <div class="group" id="presets"></div>
+                <div class="group" id="pane-toggles"></div>
+            </div>
+        </header>
+
+        <main id="workspace" class="workspace"></main>
+
+        <footer class="shortcuts">
+            <span><kbd>คลิก</kbd> เปิดป้าย</span>
+            <span><kbd>Space</kbd> เปิดแบบสุ่ม</span>
+            <span><kbd>Enter</kbd> เฉลย / ถัดไป</span>
+            <span><kbd>Shift</kbd>+<kbd>R</kbd> เฉลยทันที</span>
+            <span>ลาก <kbd>รอยคั่น</kbd> เพื่อปรับขนาด (Shift = ไม่ snap)</span>
+        </footer>
     </div>
 
-    <div id="game-container">
-        <div class="status-badges">
-            <div class="round-bonus-badge">
-                🏆 โบนัส: <span id="round-bonus-display">36</span>
-            </div>
-            <div class="timer-badge" id="timer-display">⏳ รอเปิดป้าย...</div>
-        </div>
+    <!-- พาเนลทั้งหมดอยู่ที่นี่ก่อน layout.js จะย้ายไปยังพื้นที่ทำงาน -->
+    <div id="pane-pool" hidden>
 
-        <div id="image-wrapper">
-            <div id="loading-indicator">
-                <div class="spinner"></div>
-                <span id="loading-text">กำลังค้นหาตัวละครใหม่...</span>
-            </div>
-            
-            <img id="character-img" alt="Gacha Character" draggable="false">
-            <video id="character-video" autoplay loop muted playsinline></video>
-            
-            <div id="grid-overlay"></div>
-        </div>
+        <section class="pane" data-pane="stage">
+            <header class="pane__head">
+                <span class="pane__title">🖼 ภาพ</span>
+            </header>
+            <div class="pane__body pane__body--stage">
+                <div id="stage">
+                    <div id="loading" class="loading" hidden>
+                        <div class="spinner"></div>
+                        <span id="loading-text">กำลังค้นหาตัวละคร...</span>
+                    </div>
 
-        <div class="guessing-section" id="guessing-section">
-            <div class="guessing-input-group">
-                <input type="text" id="guess-input" placeholder="พิมพ์ชื่อตัวละครที่นี่..." autocomplete="off">
-                <button onclick="submitGuess()">ตอบ!</button>
-            </div>
-            <button id="btn-hint" class="hint-btn" onclick="requestHint()">💡 ขอคำใบ้ (-10 โบนัส)</button>
-            <button id="btn-peek" class="hint-btn" onclick="requestPeek()" style="border-color: #a29bfe; color: #a29bfe;">👁️ ขอแอบดูภาพ 1 ช่อง (-15 โบนัส)</button>
-            <div class="hint-display" id="hint-display"></div>
-            <div class="guess-feedback" id="guess-feedback"></div>
-        </div>
-        
-        <div id="character-info">
-            <h1 id="char-name">ชื่อตัวละคร</h1>
-            <h2 id="char-game">จากเกม</h2>
-        </div>
+                    <img id="media-img" alt="" draggable="false" hidden>
+                    <video id="media-video" autoplay loop muted playsinline hidden></video>
 
-        <div class="controls-hint">
-            <kbd>คลิกป้าย</kbd> เปิดช่อง&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Shift</kbd> + <kbd>R</kbd> เฉลย/ยอมแพ้&nbsp;&nbsp;|&nbsp;&nbsp;<kbd>Enter</kbd> สุ่มตัวถัดไป
-        </div>
-    </div>
+                    <div id="grid"></div>
 
-    <div id="history-modal" class="modal-backdrop">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>🕒 ประวัติการทาย (รอบนี้)</h2>
-                <button class="close-btn" id="close-history-btn">&times;</button>
+                    <div id="error-card" class="error-card" hidden>
+                        <span class="error-card__icon">⚠️</span>
+                        <strong>ข้อผิดพลาด</strong>
+                        <p id="error-text"></p>
+                        <small>กด Enter เพื่อสุ่มใหม่</small>
+                    </div>
+                </div>
             </div>
-            <ul class="history-list" id="history-list"></ul>
-        </div>
-    </div>
+        </section>
 
-    <div id="settings-modal" class="modal-backdrop">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h2>⚙️ ตั้งค่าและจัดการข้อมูล</h2>
-                <button class="close-btn" id="close-settings-btn">&times;</button>
+        <section class="pane" data-pane="control">
+            <header class="pane__head">
+                <span class="pane__title">🎯 ควบคุม & ทายคำตอบ</span>
+            </header>
+            <div class="pane__body pane__body--center">
+                <div id="answer" class="answer" hidden>
+                    <span class="answer__label">เฉลย</span>
+                    <h1 id="answer-name"></h1>
+                    <h2 id="answer-game"></h2>
+                    <p id="answer-winner" class="answer__winner" hidden></p>
+                    <button id="btn-next-round" class="btn-next-round" type="button">▶️ สุ่มตัวละครถัดไป (Enter)</button>
+                </div>
+
+                <div id="guess-panel" class="guess-panel">
+                    <div id="turn-banner" class="turn-banner">
+                        <strong id="turn-banner-title">👆 ขั้นที่ 1: คลิกเปิดป้าย 1 ช่อง</strong>
+                        <small id="turn-banner-step">เปิดป้ายแล้วจะมีเวลา 15 วินาทีในการทาย</small>
+                    </div>
+
+                    <form class="guess-row" id="guess-form" autocomplete="off">
+                        <input type="text" id="guess-input" placeholder="พิมพ์ชื่อตัวละครที่นี่...">
+                        <button id="btn-guess-submit" type="submit">ตอบ!</button>
+                    </form>
+                    <div class="hint-actions">
+                        <button id="btn-random-tile" class="chip chip--random" type="button">🎲 สุ่มเปิด 1 ช่อง</button>
+                        <button id="btn-hint" class="chip chip--hint" type="button">💡 คำใบ้ (-10)</button>
+                        <button id="btn-peek" class="chip chip--peek" type="button">👁️ แอบดู 1 ช่อง (-15)</button>
+                        <button id="btn-pass-turn" class="chip chip--pass" type="button">⏭️ ข้ามเทิร์น</button>
+                        <button id="btn-give-up" class="chip chip--giveup" type="button" title="ยอมแพ้และดูเฉลย (Shift+R)">🏳️ เฉลย</button>
+                    </div>
+                    <div id="hint-display" class="hint-display" hidden></div>
+                </div>
+
+                <div id="feedback" class="feedback" aria-live="polite"></div>
             </div>
-            
-            <div style="margin-bottom: 25px;">
-                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">⏳ ระบบเวลา & แอนิเมชัน</h3>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                        <input type="checkbox" id="toggle-timer" style="width: 18px; height: 18px; accent-color: var(--primary-color);" checked>
-                        <span style="font-size: 1.05rem;">เปิดฟังก์ชันจับเวลา 15 วินาที</span>
+        </section>
+
+        <section class="pane" data-pane="players">
+            <header class="pane__head">
+                <span class="pane__title">👥 คิวผู้เล่น & คะแนน</span>
+                <div class="pane__actions">
+                    <button id="btn-coop-quick" class="link-btn link-btn--primary" type="button" title="เปิดระบบห้อง Co-op">🌐 ห้อง</button>
+                    <button id="btn-shuffle-turn" class="link-btn link-btn--muted" type="button" title="สุ่มลำดับคิวใหม่">🔀 สุ่มคิว</button>
+                    <button id="btn-reset-scores" class="link-btn" type="button">รีเซ็ต</button>
+                </div>
+                <button class="pane__close" type="button" data-hide title="ซ่อนพาเนล">×</button>
+            </header>
+            <div class="pane__body pane__body--list">
+                <ul class="player-list" id="players-list"></ul>
+                <form class="add-player" id="add-player-form" autocomplete="off">
+                    <input type="text" id="new-player-name" placeholder="เพิ่มชื่อผู้เล่นเข้าคิว..." maxlength="24">
+                    <button type="submit">+ เพิ่ม</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="pane" data-pane="history">
+            <header class="pane__head">
+                <span class="pane__title">🕒 ประวัติการทาย</span>
+                <button class="pane__close" type="button" data-hide title="ซ่อนพาเนล">×</button>
+            </header>
+            <div class="pane__body pane__body--list">
+                <ul class="history-list" id="history-list"></ul>
+            </div>
+        </section>
+
+        <section class="pane" data-pane="settings">
+            <header class="pane__head">
+                <span class="pane__title">⚙️ ตั้งค่า</span>
+                <button class="pane__close" type="button" data-hide title="ซ่อนพาเนล">×</button>
+            </header>
+            <div class="pane__body pane__body--list">
+                <section class="section">
+                    <h3>⏳ ระบบเวลา & แอนิเมชัน</h3>
+                    <label class="toggle-row">
+                        <input type="checkbox" id="toggle-timer">
+                        <span>เปิดฟังก์ชันจับเวลา 15 วินาที</span>
                     </label>
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                        <input type="checkbox" id="toggle-animated" style="width: 18px; height: 18px; accent-color: var(--primary-color);" checked>
-                        <span style="font-size: 1.05rem;">เปิดระบบสุ่มภาพเคลื่อนไหว (Animated GIF/Video)</span>
+                    <label class="toggle-row">
+                        <input type="checkbox" id="toggle-animated">
+                        <span>เปิดระบบสุ่มภาพเคลื่อนไหว (GIF/Video)</span>
                     </label>
-                </div>
-            </div>
+                </section>
 
-            <div style="margin-bottom: 25px;">
-                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">🎮 เลือกเกมที่จะสุ่ม</h3>
-                <div id="settings-game-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 5px;"></div>
-            </div>
+                <section class="section">
+                    <h3>🎮 เลือกเกมที่จะสุ่ม</h3>
+                    <div class="game-grid" id="settings-game-list"></div>
+                </section>
 
-            <div>
-                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;">➕ เพิ่มเกมใหม่เข้าระบบ</h3>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <input type="text" id="new-game-name" placeholder="ชื่อเกม (แสดงผล)" style="flex: 1; min-width: 150px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; outline: none;">
-                    <input type="text" id="new-game-tag" placeholder="Tag (เช่น azur_lane)" style="flex: 1; min-width: 150px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; outline: none;">
-                    <button onclick="addNewGame()" style="background: var(--primary-color); border: none; color: white; padding: 0 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">เพิ่ม</button>
+                <section class="section">
+                    <h3>➕ เพิ่มเกมใหม่</h3>
+                    <form class="add-game-form" id="add-game-form" autocomplete="off">
+                        <input type="text" id="new-game-name" placeholder="ชื่อเกม (แสดงผล)">
+                        <input type="text" id="new-game-tag" placeholder="Tag (เช่น azur_lane)">
+                        <button type="submit">เพิ่ม</button>
+                    </form>
+                    <small class="hint-text">* ใส่ Tag ภาษาอังกฤษให้ตรงกับฐานข้อมูลของ Safebooru</small>
+                </section>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- หน้าต่างจัดการห้อง Co-op (ออนไลน์ P2P + หลายแท็บ/หลายจอ) -->
+    <div id="coop-modal" class="coop-backdrop" hidden>
+        <div class="coop-dialog" role="dialog" aria-modal="true" aria-labelledby="coop-dialog-title">
+            <header class="coop-dialog__head">
+                <h2 id="coop-dialog-title">🌐 ระบบห้อง Co-op (ผลัดกันเปิดป้าย & แย่งทายตามคิว)</h2>
+                <button id="btn-close-coop" class="pane__close" type="button" title="ปิดหน้าต่าง">×</button>
+            </header>
+
+            <div class="coop-dialog__body">
+                <!-- ส่วนที่ 1: ยังไม่ได้อยู่ในห้อง (เลือกสร้างห้อง หรือ เข้าร่วมห้อง) -->
+                <div id="coop-setup-section" class="coop-grid">
+                    <div class="coop-card">
+                        <h3>👑 สร้างห้อง (สำหรับ Host / คนคุมเกม)</h3>
+                        <p>สร้างรหัสห้องเพื่อให้เพื่อนเข้าผ่านลิงก์เชิญ หรือเปิดแยกหน้าจอผู้เล่นในคอมเครื่องเดียวกัน</p>
+                        <input type="text" id="coop-host-name" placeholder="ชื่อผู้เล่นของคุณ (เว้นว่างได้ถ้าเป็นคนคุมเกมอย่างเดียว)" maxlength="24">
+                        <button id="btn-create-room" class="btn-primary-full" type="button">🚀 สร้างห้อง Co-op ทันที</button>
+                    </div>
+
+                    <div class="coop-card">
+                        <h3>🎮 เข้าร่วมห้อง (สำหรับผู้เล่น)</h3>
+                        <p>ใส่รหัสห้อง 6 หลักที่ได้จากเพื่อน หรือเปิดจากลิงก์เชิญเพื่อเข้าคิวเล่น</p>
+                        <form id="coop-join-form" class="coop-form" autocomplete="off">
+                            <input type="text" id="coop-join-code" placeholder="รหัสห้อง (เช่น AB12CD)" maxlength="8">
+                            <input type="text" id="coop-join-name" placeholder="ตั้งชื่อผู้เล่นของคุณ..." maxlength="24">
+                            <button class="btn-primary-full" type="submit">🔗 เข้าร่วมห้อง</button>
+                        </form>
+                    </div>
                 </div>
-                <small style="color: #aaa; display: block; margin-top: 10px;">* โปรดใส่ Tag ภาษาอังกฤษให้ตรงกับฐานข้อมูลของเว็บไซต์ Safebooru</small>
+
+                <!-- ส่วนที่ 2: กำลังเปิดห้องเป็น Host -->
+                <div id="coop-host-active" class="coop-active-box" hidden>
+                    <div class="coop-room-banner">
+                        <span>รหัสห้อง Co-op ของคุณ</span>
+                        <strong id="coop-room-code" class="coop-code-badge">------</strong>
+                        <small id="coop-host-status">🟢 พร้อมเชื่อมต่อ</small>
+                    </div>
+
+                    <div class="coop-share-row">
+                        <input type="text" id="coop-invite-url" readonly>
+                        <button id="btn-copy-invite" class="btn-coop-action" type="button">📋 คัดลอกลิงก์เชิญ</button>
+                        <button id="btn-open-player-win" class="btn-coop-action btn-coop-action--alt" type="button">🪟 เปิดจอผู้เล่นเพิ่ม</button>
+                    </div>
+
+                    <form id="coop-host-self-form" class="coop-self-row" autocomplete="off">
+                        <input type="text" id="coop-host-self-name" placeholder="ชื่อของคุณ (หากต้องการลงเล่นในคิวด้วย)" maxlength="24">
+                        <button type="submit">+ ลงเล่นในคิว</button>
+                    </form>
+
+                    <div class="coop-rules-note">
+                        <strong>📌 กติกา Turn-based Co-op:</strong>
+                        <ul>
+                            <li>ผู้เล่นที่ถึงคิวต้อง <strong>เปิดป้าย 1 ช่อง</strong> ก่อน แล้วจะมีเวลา <strong>15 วินาที</strong> ในการพิมพ์ทาย</li>
+                            <li>ถ้า <strong>ทายผิด (-5 แต้ม)</strong>, <strong>หมดเวลา 15 วิ</strong> หรือกด <strong>ข้ามเทิร์น</strong> สิทธิ์จะส่งต่อให้คิวถัดไปทันที</li>
+                            <li>ใครทายถูกจะได้รับโบนัสตามจำนวนป้ายที่เหลือ และรอบถัดไปจะเริ่มที่คิวคนถัดไปโดยอัตโนมัติ</li>
+                        </ul>
+                    </div>
+
+                    <div class="coop-footer-actions">
+                        <button id="btn-stop-host" class="btn-danger-outline" type="button">ปิดห้อง Co-op</button>
+                    </div>
+                </div>
+
+                <!-- ส่วนที่ 3: กำลังเชื่อมต่อในฐานะผู้เล่น (Client) -->
+                <div id="coop-client-active" class="coop-active-box" hidden>
+                    <div class="coop-room-banner">
+                        <span>กำลังอยู่ในห้อง Co-op</span>
+                        <strong id="coop-client-room" class="coop-code-badge">------</strong>
+                        <p>ชื่อผู้เล่นของคุณ: <strong id="coop-client-name"></strong></p>
+                        <small id="coop-client-status">🟢 เชื่อมต่อแล้ว</small>
+                    </div>
+
+                    <div class="coop-footer-actions">
+                        <button id="btn-leave-room" class="btn-danger-outline" type="button">ออกจากห้อง</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="app-version">v7.5 - Strict Memory System</div>
-
-    <script>
-        const DEFAULT_GAMES = [
-            { id: 'def_1', name: "Genshin Impact", tag: "genshin_impact", active: true, isDefault: true },
-            { id: 'def_2', name: "Honkai: Star Rail", tag: "honkai:_star_rail", active: true, isDefault: true },
-            { id: 'def_3', name: "Arknights", tag: "arknights", active: true, isDefault: true },
-            { id: 'def_4', name: "Blue Archive", tag: "blue_archive", active: true, isDefault: true },
-            { id: 'def_5', name: "Zenless Zone Zero", tag: "zenless_zone_zero", active: true, isDefault: true }
-        ];
-
-        let gamesDb = [];
-        let localCharacters = []; 
-        let currentCharacter = null;
-        let isRevealed = false;
-        let isLoading = false;
-        let unrevealedTiles = [];
-        let playHistory = []; 
-        let retryCount = 0;
-        
-        let players = [];
-        let activePlayerId = null;
-        let hasAwarded = false;
-
-        // ระบบความจำ 50 ตัวล่าสุด (กันซ้ำ)
-        let seenCharacters = [];
-
-        let timerInterval = null;
-        let timeLeft = 15;
-        let hintLevel = 0;
-        let hintPenalty = 0;
-        let isPeekMode = false; // ระบบเช็คสถานะการแอบดูภาพ
-
-        const UNLOCK_THRESHOLD = 12;
-        const LOCKED_COUNT = 6; 
-        const PENALTY_POINTS = 5; 
-        const MAX_RETRIES = 15; 
-        const GRID_ROWS = 6; 
-        const GRID_COLS = 6; 
-
-        let dom = {};
-
-        function loadGamesDb() {
-            try {
-                const stored = localStorage.getItem('gachaGamesDb');
-                if (stored) { gamesDb = JSON.parse(stored); } 
-                else { gamesDb = JSON.parse(JSON.stringify(DEFAULT_GAMES)); }
-            } catch(e) { gamesDb = JSON.parse(JSON.stringify(DEFAULT_GAMES)); }
-        }
-
-        function saveGamesDb() { localStorage.setItem('gachaGamesDb', JSON.stringify(gamesDb)); }
-
-        function renderSettingsGames() {
-            if(!dom.settingsGameList) return;
-            dom.settingsGameList.innerHTML = '';
-            gamesDb.forEach(g => {
-                const div = document.createElement('div');
-                div.style.display = 'flex'; div.style.justifyContent = 'space-between';
-                div.style.alignItems = 'center'; div.style.background = 'rgba(0,0,0,0.2)';
-                div.style.padding = '8px 12px'; div.style.borderRadius = '8px';
-                div.style.border = '1px solid rgba(255,255,255,0.05)';
-
-                const label = document.createElement('label');
-                label.style.display = 'flex'; label.style.alignItems = 'center';
-                label.style.gap = '10px'; label.style.cursor = 'pointer';
-                label.style.flex = '1'; label.style.overflow = 'hidden';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox'; checkbox.checked = g.active;
-                checkbox.style.width = '16px'; checkbox.style.height = '16px';
-                checkbox.style.accentColor = 'var(--primary-color)';
-                checkbox.onchange = (e) => { g.active = e.target.checked; saveGamesDb(); };
-
-                const span = document.createElement('span');
-                span.textContent = g.name; span.style.whiteSpace = 'nowrap';
-                span.style.overflow = 'hidden'; span.style.textOverflow = 'ellipsis';
-                span.style.fontSize = '0.95rem';
-
-                label.appendChild(checkbox); label.appendChild(span);
-                div.appendChild(label);
-
-                if (!g.isDefault) {
-                    const delBtn = document.createElement('button');
-                    delBtn.textContent = '×'; delBtn.style.background = 'none';
-                    delBtn.style.border = 'none'; delBtn.style.color = 'var(--danger-color)';
-                    delBtn.style.fontSize = '1.4rem'; delBtn.style.cursor = 'pointer';
-                    delBtn.style.padding = '0 5px'; delBtn.style.transition = '0.2s';
-                    delBtn.onmouseover = () => delBtn.style.transform = 'scale(1.2)';
-                    delBtn.onmouseout = () => delBtn.style.transform = 'scale(1)';
-                    delBtn.onclick = () => {
-                        if(confirm(`ต้องการลบเกม "${g.name}" ออกจากระบบใช่หรือไม่?`)) {
-                            gamesDb = gamesDb.filter(game => game.id !== g.id);
-                            saveGamesDb(); renderSettingsGames();
-                        }
-                    };
-                    div.appendChild(delBtn);
-                }
-                dom.settingsGameList.appendChild(div);
-            });
-        }
-
-        window.addNewGame = function() {
-            if(!dom.newGameName || !dom.newGameTag) return;
-            const name = dom.newGameName.value.trim();
-            const tag = dom.newGameTag.value.trim();
-            if(!name || !tag) {
-                alert('⚠️ กรุณากรอกทั้งชื่อเกมและ Tag ให้ครบถ้วน');
-                return;
-            }
-            gamesDb.push({
-                id: 'custom_' + Date.now(), name: name, tag: tag, active: true, isDefault: false
-            });
-            saveGamesDb(); renderSettingsGames();
-            dom.newGameName.value = ''; dom.newGameTag.value = '';
-        };
-
-        function loadSafePlayers() {
-            try {
-                const rawPlayers = localStorage.getItem('gachaPlayers');
-                players = rawPlayers ? JSON.parse(rawPlayers) : [];
-                if (!Array.isArray(players)) players = [];
-            } catch (e) { players = []; localStorage.removeItem('gachaPlayers'); }
-        }
-
-        function loadLocalData() {
-            try {
-                const rawData = localStorage.getItem('gachaGameData');
-                localCharacters = rawData ? JSON.parse(rawData) : [];
-                if (!Array.isArray(localCharacters)) localCharacters = [];
-            } catch (e) { localCharacters = []; localStorage.removeItem('gachaGameData'); }
-            
-            try {
-                const memory = localStorage.getItem('gachaSeenCharacters');
-                seenCharacters = memory ? JSON.parse(memory) : [];
-                if (!Array.isArray(seenCharacters)) seenCharacters = [];
-            } catch (e) { seenCharacters = []; localStorage.removeItem('gachaSeenCharacters'); }
-        }
-
-        function init() {
-            dom = {
-                img: document.getElementById('character-img'),
-                video: document.getElementById('character-video'),
-                gridOverlay: document.getElementById('grid-overlay'),
-                infoBox: document.getElementById('character-info'),
-                nameDisplay: document.getElementById('char-name'),
-                gameDisplay: document.getElementById('char-game'),
-                loading: document.getElementById('loading-indicator'),
-                loadingText: document.getElementById('loading-text'),
-                btnHistory: document.getElementById('btn-history'),
-                historyModal: document.getElementById('history-modal'),
-                closeHistoryBtn: document.getElementById('close-history-btn'),
-                historyList: document.getElementById('history-list'),
-                
-                btnSettings: document.getElementById('btn-settings'),
-                settingsModal: document.getElementById('settings-modal'),
-                closeSettingsBtn: document.getElementById('close-settings-btn'),
-                settingsGameList: document.getElementById('settings-game-list'),
-                newGameName: document.getElementById('new-game-name'),
-                newGameTag: document.getElementById('new-game-tag'),
-                
-                playersList: document.getElementById('players-list'),
-                newPlayerInput: document.getElementById('new-player-name'),
-                roundBonusDisplay: document.getElementById('round-bonus-display'),
-                timerDisplay: document.getElementById('timer-display'),
-                toggleTimer: document.getElementById('toggle-timer'),
-                toggleAnimated: document.getElementById('toggle-animated'),
-                guessingSection: document.getElementById('guessing-section'),
-                guessInput: document.getElementById('guess-input'),
-                guessFeedback: document.getElementById('guess-feedback'),
-                btnHint: document.getElementById('btn-hint'),
-                hintDisplay: document.getElementById('hint-display')
-            };
-
-            const storedAnimated = localStorage.getItem('gachaAllowAnimated');
-            if(storedAnimated !== null && dom.toggleAnimated) {
-                dom.toggleAnimated.checked = (storedAnimated === 'true');
-            }
-
-            loadGamesDb(); loadLocalData(); loadSafePlayers();
-            renderSettingsGames(); setupEventListeners(); renderPlayers();
-            loadRandomCharacter();
-
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'gachaGameData') loadLocalData();
-                if (e.key === 'gachaPlayers') { loadSafePlayers(); renderPlayers(); }
-                if (e.key === 'gachaGamesDb') { loadGamesDb(); renderSettingsGames(); }
-            });
-        }
-
-        function handleAutoRetry(errorMessage) {
-            if (retryCount < MAX_RETRIES) {
-                retryCount++;
-                if(dom.loadingText) dom.loadingText.textContent = `สุ่มหน้าใหม่... (ครั้งที่ ${retryCount})`;
-                isLoading = false; 
-                setTimeout(() => loadRandomCharacter(), 800);
-            } else {
-                if (seenCharacters.length > 0) {
-                    seenCharacters = seenCharacters.slice(Math.floor(seenCharacters.length / 2));
-                    localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
-                }
-                isLoading = false; retryCount = 0;
-                showError(errorMessage + " (ข้ามภาพอัตโนมัติเกินขีดจำกัด)");
-            }
-        }
-
-        async function loadRandomCharacter() {
-            if (isLoading) return;
-
-            const activeGames = gamesDb.filter(g => g.active);
-            if (activeGames.length === 0) {
-                alert("กรุณาเลือกเกมอย่างน้อย 1 เกมในหน้าต่างการตั้งค่าครับ!");
-                return;
-            }
-
-            isLoading = true; isRevealed = false; hasAwarded = false; 
-            hintLevel = 0; hintPenalty = 0; isPeekMode = false;
-            
-            if(dom.guessInput) dom.guessInput.value = '';
-            if(dom.guessFeedback) dom.guessFeedback.textContent = '';
-            if(dom.guessingSection) dom.guessingSection.style.display = 'flex'; 
-            if(dom.hintDisplay) { dom.hintDisplay.style.display = 'none'; dom.hintDisplay.textContent = ''; }
-            
-            if(dom.img) { dom.img.style.opacity = 0; dom.img.style.display = 'none'; }
-            if(dom.video) { dom.video.style.opacity = 0; dom.video.style.display = 'none'; dom.video.pause(); }
-            
-            if(dom.gridOverlay) dom.gridOverlay.innerHTML = ''; 
-            if(dom.infoBox) dom.infoBox.classList.remove('revealed');
-            if(dom.loading) dom.loading.classList.add('show');
-            
-            resetTimerUI(); renderPlayers(); 
-            if (retryCount === 0 && dom.loadingText) dom.loadingText.textContent = "กำลังค้นหาตัวละครแบบสุ่ม...";
-
-            const activeGameNames = activeGames.map(g => g.name);
-            const localFiltered = localCharacters.filter(char => activeGameNames.includes(char.game));
-            const pickFromLocal = (localFiltered.length > 0 && Math.random() < 0.15);
-            
-            const allowAnimated = dom.toggleAnimated ? dom.toggleAnimated.checked : false;
-
-            try {
-                if (pickFromLocal) {
-                    const localChar = localFiltered[Math.floor(Math.random() * localFiltered.length)];
-                    currentCharacter = { name: localChar.name, game: localChar.game };
-                    if(dom.img) { dom.img.style.display = 'block'; dom.img.src = localChar.url; }
-                    
-                    seenCharacters.push(currentCharacter.name.toLowerCase());
-                    if (seenCharacters.length > 50) seenCharacters.shift();
-                    localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
-
-                } else {
-                    const randomGameObj = activeGames[Math.floor(Math.random() * activeGames.length)];
-                    let searchTags = randomGameObj.tag;
-                    let randomPage = 1;
-                    
-                    const forceAnimated = allowAnimated && Math.random() < 0.35;
-                    
-                    if (forceAnimated) {
-                        searchTags += ` animated`; 
-                        randomPage = Math.floor(Math.random() * 2) + 1; 
-                    } else {
-                        searchTags += ` solo`; 
-                        randomPage = Math.floor(Math.random() * 100) + 1; 
-                    }
-
-                    const targetApiUrl = `https://safebooru.donmai.us/posts.json?limit=50&page=${randomPage}&tags=${encodeURIComponent(searchTags)}`;
-                    
-                    const response = await fetch(targetApiUrl);
-                    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-
-                    const data = await response.json();
-                    
-                    let validPosts = data.filter(post => {
-                        if (!post.tag_string_character) return false;
-                        if (!(post.large_file_url || post.file_url)) return false;
-                        if (post.file_ext === 'zip') return false; 
-                        const isAnim = ['mp4', 'webm', 'gif'].includes(post.file_ext);
-                        if (!allowAnimated && isAnim) return false; 
-                        return true;
-                    });
-
-                    let unplayedPosts = validPosts.filter(post => {
-                        const charName = formatCharacterName(post.tag_string_character);
-                        return charName && !seenCharacters.includes(charName.toLowerCase());
-                    });
-
-                    if (unplayedPosts.length > 0) {
-                        validPosts = unplayedPosts;
-                    } else {
-                        throw new Error("เจอแต่ตัวละครที่ซ้ำกับรอบก่อนหน้า");
-                    }
-
-                    if (validPosts.length > 0) {
-                        const landscapePosts = validPosts.filter(p => p.image_width > p.image_height);
-                        const portraitPosts = validPosts.filter(p => p.image_height >= p.image_width);
-
-                        let selectedPool = validPosts;
-                        if (Math.random() < 0.4 && landscapePosts.length > 0) { selectedPool = landscapePosts; } 
-                        else if (portraitPosts.length > 0) { selectedPool = portraitPosts; }
-
-                        const randomPost = selectedPool[Math.floor(Math.random() * selectedPool.length)];
-                        const extractedName = formatCharacterName(randomPost.tag_string_character);
-                        
-                        if (extractedName) {
-                            currentCharacter = { name: extractedName, game: randomGameObj.name };
-                            const fileUrl = randomPost.large_file_url || randomPost.file_url;
-                            const isVideo = ['mp4', 'webm'].includes(randomPost.file_ext);
-                            
-                            if (isVideo) {
-                                dom.video.style.display = 'block'; dom.video.src = fileUrl;
-                            } else {
-                                dom.img.style.display = 'block'; dom.img.src = fileUrl;
-                            }
-
-                            seenCharacters.push(currentCharacter.name.toLowerCase());
-                            if (seenCharacters.length > 50) seenCharacters.shift(); 
-                            localStorage.setItem('gachaSeenCharacters', JSON.stringify(seenCharacters));
-
-                        } else { throw new Error("สกัดชื่อตัวละครไม่สำเร็จ"); }
-                    } else { throw new Error("ไม่พบภาพที่ใช้งานได้ในหน้านี้"); }
-                }
-            } catch (error) {
-                console.warn("Fetch Error (Retrying):", error.message);
-                handleAutoRetry(`กำลังหาภาพใหม่...`);
-            }
-        }
-
-        window.onloadLogic = () => {
-            if(!currentCharacter || !isLoading) return;
-            retryCount = 0; 
-            if(dom.loading) dom.loading.classList.remove('show');
-            
-            if(dom.img && dom.img.style.display === 'block') dom.img.style.opacity = 1; 
-            if(dom.video && dom.video.style.display === 'block') {
-                dom.video.style.opacity = 1;
-                dom.video.play().catch(e => console.warn("Autoplay Blocked: ", e));
-            }
-            
-            createGrid(); isLoading = false;
-        };
-        
-        window.onerrorLogic = (e) => {
-            const target = e.target;
-            if (!target || !target.src || target.src === window.location.href) return;
-            handleAutoRetry("ไฟล์รูปหรือวิดีโอต้นทางเสียหาย หรือถูกบล็อก");
-        };
-
-        function showError(message) {
-            if(dom.loading) dom.loading.classList.remove('show');
-            if(dom.img) dom.img.style.opacity = 0; if(dom.video) dom.video.style.opacity = 0; 
-            unrevealedTiles = []; 
-            if(dom.gridOverlay) dom.gridOverlay.innerHTML = `
-                <div style="background: rgba(252, 92, 101, 0.1); border: 2px dashed #fc5c65; border-radius: 12px; color: #fc5c65; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 30px; text-align: center;">
-                    <span style="font-size: 3.5rem; margin-bottom: 10px;">⚠️</span>
-                    <strong style="font-size: 1.4rem;">ข้อผิดพลาด</strong>
-                    <p style="font-size: 1rem; margin-top: 8px; color: #d2dae2;">${message}</p>
-                    <small style="margin-top: 20px; padding: 8px 15px; background: rgba(255,255,255,0.1); border-radius: 6px;">กด Enter เพื่อสั่งสุ่มใหม่</small>
-                </div>
-            `;
-            if (currentCharacter) {
-                if(dom.nameDisplay) dom.nameDisplay.textContent = currentCharacter.name;
-                if(dom.gameDisplay) dom.gameDisplay.textContent = currentCharacter.game;
-            }
-            if(dom.infoBox) dom.infoBox.classList.add('revealed'); 
-            renderPlayers();
-        }
-
-        function checkIfAllRevealed() {
-            if (unrevealedTiles.length === 0 && !isRevealed) {
-                revealAll();
-            }
-        }
-
-        function createGrid() {
-            if(!dom.gridOverlay) return;
-            dom.gridOverlay.innerHTML = '';
-            dom.gridOverlay.style.gridTemplateColumns = `repeat(${GRID_COLS}, 1fr)`;
-            dom.gridOverlay.style.gridTemplateRows = `repeat(${GRID_ROWS}, 1fr)`;
-            unrevealedTiles = [];
-            
-            const totalTilesCount = GRID_ROWS * GRID_COLS;
-            const indices = Array.from({length: totalTilesCount}, (_, i) => i);
-            for (let i = indices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
-            const lockedIndices = indices.slice(0, LOCKED_COUNT);
-            
-            for (let i = 0; i < totalTilesCount; i++) {
-                const tile = document.createElement('div');
-                tile.className = 'grid-tile'; tile.textContent = i + 1;
-                
-                if (lockedIndices.includes(i)) {
-                    tile.classList.add('locked'); tile.dataset.isLocked = "true"; 
-                } else {
-                    tile.dataset.isLocked = "false";
-                }
-                
-                tile.addEventListener('click', function() {
-                    if (isRevealed || this.classList.contains('opened') || isLoading) return;
-                    
-                    if (isPeekMode) {
-                        this.classList.add('opened');
-                        const index = unrevealedTiles.indexOf(this);
-                        if (index > -1) unrevealedTiles.splice(index, 1);
-                        
-                        hintPenalty += 15; 
-                        isPeekMode = false; 
-                        
-                        if(dom.guessFeedback) {
-                            dom.guessFeedback.textContent = "👁️ แอบดูสำเร็จ! (-15 โบนัส)";
-                            dom.guessFeedback.style.color = "#a29bfe";
-                            setTimeout(() => { 
-                                if(dom.guessFeedback.textContent.includes("แอบดูสำเร็จ")) dom.guessFeedback.textContent = ""; 
-                            }, 2500);
-                        }
-                        
-                        updateLockedTilesVisuals(); renderPlayers(); startTimer(); 
-                        try { checkIfAllRevealed(); } catch(e) {}
-                        return; 
-                    }
-
-                    if (this.dataset.isLocked === "true") {
-                        const openedCount = totalTilesCount - unrevealedTiles.length;
-                        if (openedCount < UNLOCK_THRESHOLD) {
-                            this.classList.remove('shake'); void this.offsetWidth; this.classList.add('shake');
-                            if(dom.guessFeedback) {
-                                dom.guessFeedback.textContent = `🔒 ต้องเปิดป้ายปกติอีก ${UNLOCK_THRESHOLD - openedCount} แผ่น เพื่อปลดล็อก!`;
-                                dom.guessFeedback.style.color = "var(--edit-color)";
-                            }
-                            return; 
-                        } else {
-                            this.classList.remove('locked'); this.dataset.isLocked = "false";
-                        }
-                    }
-
-                    this.classList.add('opened');
-                    const index = unrevealedTiles.indexOf(this);
-                    if (index > -1) unrevealedTiles.splice(index, 1);
-                    
-                    updateLockedTilesVisuals(); renderPlayers(); startTimer(); checkIfAllRevealed();
-                });
-                
-                dom.gridOverlay.appendChild(tile); unrevealedTiles.push(tile);
-            }
-            renderPlayers();
-        }
-
-        function updateLockedTilesVisuals() {
-            const totalTilesCount = GRID_ROWS * GRID_COLS;
-            const openedCount = totalTilesCount - unrevealedTiles.length;
-            if (openedCount >= UNLOCK_THRESHOLD) {
-                unrevealedTiles.forEach(tile => {
-                    if (tile.dataset.isLocked === "true") {
-                        tile.classList.remove('locked'); tile.dataset.isLocked = "false";
-                    }
-                });
-                if (openedCount === UNLOCK_THRESHOLD && !isRevealed && dom.guessFeedback) {
-                    dom.guessFeedback.textContent = "🔓 ปลดล็อกแผ่นป้ายพิเศษแล้ว!";
-                    dom.guessFeedback.style.color = "var(--success-color)";
-                    setTimeout(() => {
-                        if(dom.guessFeedback.textContent.includes("ปลดล็อก")) dom.guessFeedback.textContent = "";
-                    }, 3000);
-                }
-            }
-        }
-
-        function openRandomTile() {
-            if (isRevealed || unrevealedTiles.length === 0 || isLoading) return;
-            const totalTilesCount = GRID_ROWS * GRID_COLS;
-            const openedCount = totalTilesCount - unrevealedTiles.length;
-            
-            const availableTiles = unrevealedTiles.filter(tile => 
-                tile.dataset.isLocked === "false" || openedCount >= UNLOCK_THRESHOLD
-            );
-            if (availableTiles.length === 0) return; 
-            
-            const randomIndex = Math.floor(Math.random() * availableTiles.length);
-            const tileToOpen = availableTiles[randomIndex];
-            
-            tileToOpen.classList.add('opened');
-            const realIndex = unrevealedTiles.indexOf(tileToOpen);
-            if (realIndex > -1) unrevealedTiles.splice(realIndex, 1);
-            
-            updateLockedTilesVisuals(); renderPlayers(); startTimer(); checkIfAllRevealed();
-        }
-
-        function revealAll() {
-            if (isRevealed || !currentCharacter || isLoading) return;
-            unrevealedTiles.forEach(tile => {
-                tile.classList.remove('locked'); tile.classList.add('opened');
-            });
-            revealCharacterInfo();
-        }
-
-        function formatCharacterName(tagString) {
-            if (!tagString) return null;
-            let firstTag = tagString.split(' ')[0];
-            firstTag = firstTag.replace(/\_\([^)]+\)/g, '');
-            firstTag = firstTag.replace(/\([^)]+\)/g, '');
-            let nameWithSpaces = firstTag.replace(/_/g, ' ');
-            return nameWithSpaces.replace(/\b\w/g, char => char.toUpperCase()).trim();
-        }
-
-        function checkAnswerSimilarity(guess, actual) {
-            let a = actual.toLowerCase().replace(/[^a-z0-9]/g, '');
-            let b = guess.toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (b.length === 0) return false;
-            if (a.includes(b) && b.length >= 4) return true;
-            if (b.includes(a) && a.length >= 4) return true;
-            
-            let matrix = [];
-            for(let i = 0; i <= b.length; i++){ matrix[i] = [i]; }
-            for(let j = 0; j <= a.length; j++){ matrix[0][j] = j; }
-            for(let i = 1; i <= b.length; i++){
-                for(let j = 1; j <= a.length; j++){
-                    if(b.charAt(i-1) == a.charAt(j-1)){ matrix[i][j] = matrix[i-1][j-1]; } 
-                    else { matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, Math.min(matrix[i][j-1] + 1, matrix[i-1][j] + 1)); }
-                }
-            }
-            let distance = matrix[b.length][a.length];
-            let similarityPercentage = (1 - distance / Math.max(a.length, b.length)) * 100;
-            return similarityPercentage >= 70;
-        }
-
-        window.requestHint = function() {
-            if (!currentCharacter || isRevealed || isLoading) return;
-            if (hintLevel >= 3) {
-                if(dom.guessFeedback) {
-                    dom.guessFeedback.textContent = "⚠️ ใช้คำใบ้ครบ 3 ครั้งแล้ว!";
-                    dom.guessFeedback.style.color = "var(--edit-color)";
-                }
-                return;
-            }
-            hintPenalty += 10; hintLevel++;
-            const name = currentCharacter.name; let result = ""; let visibleCount = 0;
-            for (let i = 0; i < name.length; i++) {
-                if (name[i] === ' ') { result += '   '; } 
-                else {
-                    if (visibleCount < hintLevel) { result += name[i] + ' '; visibleCount++; } 
-                    else { result += '_ '; }
-                }
-            }
-            if(dom.hintDisplay) { dom.hintDisplay.textContent = result.trim(); dom.hintDisplay.style.display = 'block'; }
-            renderPlayers();
-        };
-
-        window.requestPeek = function() {
-            if (!currentCharacter || isRevealed || isLoading) return;
-            
-            isPeekMode = true;
-            
-            if(dom.guessFeedback) {
-                dom.guessFeedback.textContent = "👁️ โหมดแอบดู: คลิกที่แผ่นป้าย 1 ช่องเพื่อเปิด (แม้จะติดล็อกก็เปิดได้)!";
-                dom.guessFeedback.style.color = "#a29bfe";
-            }
-        };
-
-        window.submitGuess = function() {
-            if (isRevealed || !currentCharacter) return;
-            if(!dom.guessInput) return;
-            const guess = dom.guessInput.value.trim();
-            if(!guess) return;
-
-            const isCorrect = checkAnswerSimilarity(guess, currentCharacter.name);
-            if(isCorrect) {
-                if(dom.guessFeedback) { dom.guessFeedback.textContent = "✅ ถูกต้องยอดเยี่ยม!"; dom.guessFeedback.style.color = "var(--success-color)"; }
-                const baseBonus = unrevealedTiles.length > 0 ? unrevealedTiles.length : 36;
-                const currentBonus = Math.max(0, baseBonus - hintPenalty);
-                if(activePlayerId && !hasAwarded) awardPoints(activePlayerId, currentBonus);
-                revealAll();
-            } else {
-                let penaltyMsg = "❌ ยังไม่ถูก ลองพิมพ์ใหม่!";
-                if(activePlayerId) {
-                    const player = players.find(p => p.id === activePlayerId);
-                    if(player) {
-                        player.score -= PENALTY_POINTS; savePlayers(); renderPlayers();
-                        penaltyMsg = `❌ ยังไม่ถูก! โดนหัก ${PENALTY_POINTS} คะแนน`;
-                    }
-                }
-                if(dom.guessFeedback) {
-                    dom.guessFeedback.textContent = penaltyMsg; dom.guessFeedback.style.color = "var(--danger-color)";
-                    dom.guessFeedback.style.transform = "translateX(-10px)";
-                    setTimeout(() => dom.guessFeedback.style.transform = "translateX(10px)", 100);
-                    setTimeout(() => dom.guessFeedback.style.transform = "translateX(0)", 200);
-                }
-                dom.guessInput.value = ''; dom.guessInput.focus();
-            }
-        };
-
-        function startTimer() {
-            if (isRevealed || isLoading || !dom.timerDisplay || !dom.toggleTimer) return;
-            clearInterval(timerInterval);
-            if (!dom.toggleTimer.checked) { dom.timerDisplay.style.display = 'none'; return; }
-            dom.timerDisplay.style.display = 'inline-block';
-            
-            timeLeft = 15;
-            dom.timerDisplay.textContent = `⏱️ เวลาที่เหลือ: ${timeLeft} วิ`;
-            dom.timerDisplay.style.color = "var(--edit-color)";
-            dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
-            dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.05)";
-
-            timerInterval = setInterval(() => {
-                timeLeft--; dom.timerDisplay.textContent = `⏱️ เวลาที่เหลือ: ${timeLeft} วิ`;
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    dom.timerDisplay.textContent = "⏰ หมดเวลา! เปิดช่องใหม่เพื่อเริ่มนับใหม่";
-                    dom.timerDisplay.style.color = "var(--danger-color)";
-                    dom.timerDisplay.style.borderColor = "rgba(252, 92, 165, 0.3)";
-                    dom.timerDisplay.style.background = "rgba(252, 92, 165, 0.1)";
-                }
-            }, 1000);
-        }
-
-        function resetTimerUI() {
-            clearInterval(timerInterval); timeLeft = 15;
-            if(!dom.timerDisplay || !dom.toggleTimer) return;
-            if(!dom.toggleTimer.checked) { dom.timerDisplay.style.display = 'none'; return; }
-            dom.timerDisplay.style.display = 'inline-block';
-            dom.timerDisplay.textContent = "⏳ รอเปิดป้าย...";
-            dom.timerDisplay.style.color = "var(--edit-color)";
-            dom.timerDisplay.style.borderColor = "rgba(254, 211, 48, 0.2)";
-            dom.timerDisplay.style.background = "rgba(255, 255, 255, 0.05)";
-        }
-
-        function savePlayers() { try { localStorage.setItem('gachaPlayers', JSON.stringify(players)); } catch(e) {} }
-
-        function renderPlayers() {
-            if(!dom.playersList) return;
-            dom.playersList.innerHTML = '';
-            const baseBonus = unrevealedTiles.length > 0 ? unrevealedTiles.length : (isRevealed ? 0 : 36);
-            const currentBonus = Math.max(0, baseBonus - hintPenalty);
-            if (dom.roundBonusDisplay) dom.roundBonusDisplay.textContent = currentBonus;
-
-            const isAwardPhase = isRevealed && !isLoading && currentCharacter && !hasAwarded;
-            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-
-            if(sortedPlayers.length === 0) {
-                dom.playersList.innerHTML = '<li style="text-align:center; color:#808e9b; font-size:0.85rem; padding:10px;">เพิ่มชื่อผู้เล่นด้านล่าง</li>';
-                return;
-            }
-
-            sortedPlayers.forEach(p => {
-                const isNegative = p.score < 0; const li = document.createElement('li');
-                li.className = `player-item ${p.id === activePlayerId ? 'active' : ''} ${isAwardPhase ? 'can-award' : ''}`;
-                li.onclick = (e) => { if(!e.target.closest('button')) { activePlayerId = p.id; renderPlayers(); } };
-                li.innerHTML = `
-                    <span class="player-name">${p.name}</span>
-                    <span class="player-score ${isNegative ? 'negative' : ''}">${p.score}</span>
-                    ${isAwardPhase ? `<button class="award-btn" onclick="awardPoints('${p.id}', ${currentBonus}); event.stopPropagation();">+${currentBonus}</button>` : ''}
-                    ${!isAwardPhase ? `<button class="delete-btn" onclick="removePlayer('${p.id}'); event.stopPropagation();" title="ลบผู้เล่น">×</button>` : ''}
-                `;
-                dom.playersList.appendChild(li);
-            });
-        }
-
-        window.addPlayer = function() {
-            if(!dom.newPlayerInput) return; const name = dom.newPlayerInput.value.trim();
-            if(name) {
-                players.push({ id: Date.now().toString(), name: name, score: 0 });
-                savePlayers(); dom.newPlayerInput.value = '';
-                if(players.length === 1) activePlayerId = players[0].id;
-                renderPlayers();
-            }
-        };
-
-        window.removePlayer = function(id) {
-            if(confirm('ต้องการลบผู้เล่นนี้ใช่หรือไม่?')) {
-                players = players.filter(p => p.id !== id);
-                if(activePlayerId === id) activePlayerId = players.length > 0 ? players[0].id : null;
-                savePlayers(); renderPlayers();
-            }
-        };
-
-        window.resetScores = function() {
-            if(confirm('ต้องการรีเซ็ตคะแนนทุกคนเป็น 0 ใช่หรือไม่?')) {
-                players.forEach(p => p.score = 0); savePlayers(); renderPlayers();
-            }
-        };
-
-        window.awardPoints = function(id, points) {
-            if(hasAwarded) return; const player = players.find(p => p.id === id);
-            if(player) { player.score += points; hasAwarded = true; savePlayers(); renderPlayers(); }
-        };
-
-        function revealCharacterInfo() {
-            if (isRevealed) return; isRevealed = true; clearInterval(timerInterval);
-            if(dom.toggleTimer && dom.toggleTimer.checked && dom.timerDisplay) { dom.timerDisplay.textContent = "🏁 เฉลยแล้ว!"; }
-            if(dom.guessingSection) dom.guessingSection.style.display = 'none';
-            if(dom.infoBox) dom.infoBox.classList.add('revealed');
-            
-            if (currentCharacter) {
-                if(dom.nameDisplay) dom.nameDisplay.textContent = currentCharacter.name;
-                if(dom.gameDisplay) dom.gameDisplay.textContent = currentCharacter.game;
-            }
-            renderPlayers();
-            
-            let displayUrl = '';
-            if (dom.img && dom.img.style.display === 'block') displayUrl = dom.img.src;
-            if (dom.video && dom.video.style.display === 'block') displayUrl = dom.video.src;
-            
-            if (currentCharacter && displayUrl) {
-                if (playHistory.length === 0 || playHistory[0].url !== displayUrl) {
-                    playHistory.unshift({ name: currentCharacter.name, game: currentCharacter.game, url: displayUrl });
-                }
-            }
-        }
-
-        function openHistoryModal() {
-            if(!dom.historyList) return; dom.historyList.innerHTML = '';
-            if (playHistory.length === 0) {
-                dom.historyList.innerHTML = '<li style="text-align:center; color:#808e9b; padding:20px;">ยังไม่มีประวัติการทายในรอบนี้</li>';
-            } else {
-                playHistory.forEach((item) => {
-                    const li = document.createElement('li'); li.className = 'history-item';
-                    const isVideo = ['mp4', 'webm'].some(ext => item.url.includes(ext));
-                    const imgHTML = isVideo ? `<div class="history-img" style="display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:#aaa; background:#111;">▶ Video</div>` 
-                                            : `<img src="${item.url}" class="history-img" onerror="this.src='https://placehold.co/60x60/2d3436/0fb9b1?text=Error'">`;
-                    
-                    li.innerHTML = `${imgHTML}<div class="history-info"><strong>${item.name}</strong><small>${item.game}</small></div>`;
-                    dom.historyList.appendChild(li);
-                });
-            }
-            if(dom.historyModal) dom.historyModal.classList.add('show');
-            if(dom.btnHistory) dom.btnHistory.blur();
-        }
-        function closeHistoryModal() { if(dom.historyModal) dom.historyModal.classList.remove('show'); }
-        function openSettingsModal() { if(dom.settingsModal) dom.settingsModal.classList.add('show'); if(dom.btnSettings) dom.btnSettings.blur(); }
-        function closeSettingsModal() { if(dom.settingsModal) dom.settingsModal.classList.remove('show'); }
-
-        function setupEventListeners() {
-            if(dom.toggleTimer) dom.toggleTimer.addEventListener('change', function() { resetTimerUI(); this.blur(); });
-            if(dom.toggleAnimated) {
-                dom.toggleAnimated.addEventListener('change', function() { 
-                    localStorage.setItem('gachaAllowAnimated', this.checked); this.blur(); 
-                });
-            }
-            if(dom.btnHistory) dom.btnHistory.addEventListener('click', openHistoryModal);
-            if(dom.closeHistoryBtn) dom.closeHistoryBtn.addEventListener('click', closeHistoryModal);
-            if(dom.btnSettings) dom.btnSettings.addEventListener('click', openSettingsModal);
-            if(dom.closeSettingsBtn) dom.closeSettingsBtn.addEventListener('click', closeSettingsModal);
-
-            if(dom.guessInput) { dom.guessInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') submitGuess(); }); }
-            if(dom.img) { dom.img.addEventListener('load', window.onloadLogic); dom.img.addEventListener('error', window.onerrorLogic); }
-            if(dom.video) { dom.video.addEventListener('canplay', window.onloadLogic); dom.video.addEventListener('error', window.onerrorLogic); }
-
-            document.addEventListener('keydown', (e) => {
-                const activeTag = document.activeElement.tagName;
-                if (activeTag === 'INPUT' || activeTag === 'BUTTON') return;
-                
-                if (dom.historyModal && dom.historyModal.classList.contains('show')) return; 
-                if (dom.settingsModal && dom.settingsModal.classList.contains('show')) return; 
-
-                if (e.code === 'Space') { 
-                    e.preventDefault(); 
-                    if (e.repeat) return;
-                    if (!isRevealed) openRandomTile(); 
-                } 
-                else if (e.code === 'KeyR') { 
-                    if (e.shiftKey) {
-                        e.preventDefault(); 
-                        revealAll(); 
-                    }
-                } 
-                else if (e.code === 'Enter') {
-                    e.preventDefault();
-                    if (!isRevealed && currentCharacter) { unrevealedTiles = []; revealAll(); }
-                    if (!isLoading) { retryCount = 0; loadRandomCharacter(); }
-                }
-            });
-        }
-
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/sources.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/players.js"></script>
+    <script src="js/coop.js"></script>
+    <script src="js/panels.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
