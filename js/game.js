@@ -442,8 +442,8 @@
     state.turnPhase = 'open';
     state.timeLeft = C.timer.seconds;
     rememberSeen(candidate.name);
-    board.showLoading(false);
     board.build();
+    board.showLoading(false);
     renderAll();
     refreshPlayers();
     syncToClients();
