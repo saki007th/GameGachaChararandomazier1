@@ -85,26 +85,42 @@
 
     <div id="app-screen" class="app" hidden>
 
-        <header class="topbar">
-            <div class="brand-group">
-                <button id="btn-home" class="btn-home" type="button" title="กลับสู่หน้าหลัก (รายการห้อง)">🏠 หน้าหลัก</button>
-                <div class="brand">🎴 Gacha Guess <small>v9</small></div>
-            </div>
+        <div class="topbar-shell" id="topbar-shell">
+            <header class="topbar" id="topbar">
+                <div class="topbar__bar">
+                    <div class="brand-group">
+                        <button id="btn-home" class="btn-home" type="button" title="กลับสู่หน้าหลัก (รายการห้อง)">
+                            <span aria-hidden="true">🏠</span>
+                            <span class="btn-home__label">หน้าหลัก</span>
+                        </button>
+                        <div class="brand"><span class="brand__mark" aria-hidden="true">🎴</span><span class="brand__name">Gacha Guess</span> <small>v9</small></div>
+                    </div>
 
-            <div class="stats">
-                <div class="badge badge--bonus" title="โบนัสของรอบนี้">
-                    🏆 <span id="bonus-value">0</span>
+                    <div class="stats">
+                        <div class="badge badge--bonus" title="โบนัสของรอบนี้">
+                            🏆 <span id="bonus-value">0</span>
+                        </div>
+                        <div class="badge badge--timer" id="timer">⏳ รอเปิดป้าย...</div>
+                        <div class="badge badge--turn" id="turn-badge" data-tone="info">👥 โหมดอิสระ</div>
+                    </div>
+
+                    <button class="topbar__toggle" id="btn-topbar-toggle" type="button"
+                            aria-controls="topbar-extra" aria-expanded="false"
+                            aria-label="ขยาย/พับแถบเครื่องมือ" title="ขยาย/พับแถบเครื่องมือ">
+                        <span class="topbar__chevron" aria-hidden="true">▾</span>
+                    </button>
                 </div>
-                <div class="badge badge--timer" id="timer">⏳ รอเปิดป้าย...</div>
-                <div class="badge badge--turn" id="turn-badge" data-tone="info">👥 โหมดอิสระ</div>
-            </div>
 
-            <div class="toolbar">
-                <button id="btn-coop" class="btn-coop" type="button">🌐 ห้อง Co-op / หลายจอ</button>
-                <div class="group" id="presets"></div>
-                <div class="group" id="pane-toggles"></div>
-            </div>
-        </header>
+                <div class="topbar__extra" id="topbar-extra">
+                    <div class="topbar__extra-inner">
+                        <div class="toolbar">
+                            <div class="group" id="presets"></div>
+                            <div class="group" id="pane-toggles"></div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        </div>
 
         <main id="workspace" class="workspace"></main>
 
@@ -152,31 +168,37 @@
             </header>
             <div class="pane__body pane__body--center">
                 <div id="answer" class="answer" hidden>
-                    <span class="answer__label">เฉลย</span>
-                    <h1 id="answer-name"></h1>
-                    <h2 id="answer-game"></h2>
-                    <p id="answer-winner" class="answer__winner" hidden></p>
+                    <div class="answer__info">
+                        <div class="answer__meta">
+                            <span class="answer__label">เฉลย</span>
+                            <p id="answer-winner" class="answer__winner" hidden></p>
+                        </div>
+                        <h1 id="answer-name"></h1>
+                        <h2 id="answer-game"></h2>
+                    </div>
                     <button id="btn-next-round" class="btn-next-round" type="button">▶️ สุ่มตัวละครถัดไป (Enter)</button>
                 </div>
 
                 <div id="guess-panel" class="guess-panel">
-                    <div id="turn-banner" class="turn-banner">
-                        <strong id="turn-banner-title">👆 ขั้นที่ 1: คลิกเปิดป้าย 1 ช่อง</strong>
-                        <small id="turn-banner-step">เปิดป้ายแล้วจะมีเวลา 15 วินาทีในการทาย</small>
+                    <div class="control-top-row">
+                        <div id="turn-banner" class="turn-banner">
+                            <strong id="turn-banner-title">👆 ขั้นที่ 1: คลิกเปิดป้าย 1 ช่อง</strong>
+                            <small id="turn-banner-step">เปิดป้ายแล้วจะมีเวลา 15 วินาทีในการทาย</small>
+                        </div>
+                        <div id="hint-display" class="hint-display" hidden></div>
                     </div>
 
                     <form class="guess-row" id="guess-form" autocomplete="off">
                         <input type="text" id="guess-input" placeholder="พิมพ์ชื่อตัวละครที่นี่...">
-                        <button id="btn-guess-submit" type="submit">ตอบ!</button>
+                        <button id="btn-guess-submit" type="submit">🎯 ตอบ!</button>
                     </form>
                     <div class="hint-actions">
                         <button id="btn-random-tile" class="chip chip--random" type="button">🎲 สุ่มเปิด 1 ช่อง</button>
-                        <button id="btn-hint" class="chip chip--hint" type="button">💡 คำใบ้ (-10)</button>
-                        <button id="btn-peek" class="chip chip--peek" type="button">👁️ แอบดู 1 ช่อง (-15)</button>
+                        <button id="btn-hint" class="chip chip--hint" type="button" title="ใช้คะแนนของตนเอง 10 แต้ม">💡 คำใบ้ (-10 แต้ม)</button>
+                        <button id="btn-peek" class="chip chip--peek" type="button" title="ใช้คะแนนของตนเอง 15 แต้ม">👁️ แอบดู 1 ช่อง (-15 แต้ม)</button>
                         <button id="btn-pass-turn" class="chip chip--pass" type="button">⏭️ ข้ามเทิร์น</button>
                         <button id="btn-give-up" class="chip chip--giveup" type="button" title="ยอมแพ้และดูเฉลย (Shift+R)">🏳️ เฉลย</button>
                     </div>
-                    <div id="hint-display" class="hint-display" hidden></div>
                 </div>
 
                 <div id="feedback" class="feedback" aria-live="polite"></div>

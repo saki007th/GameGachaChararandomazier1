@@ -100,6 +100,21 @@
     return !active.clientId || active.clientId === myClientId();
   }
 
+  // ดึงผู้เล่นที่เป็นเจ้าของเทิร์นเพื่อหัก/เพิ่มคะแนนของตนเอง
+  function getActorPlayer(actorClientId = null) {
+    if (actorClientId && players.findByClient) {
+      const byClient = players.findByClient(actorClientId);
+      if (byClient) return byClient;
+    }
+    const active = players.getActive();
+    if (active) return active;
+    if (!isClient()) {
+      const defaultName = (GQ.coop && GQ.coop.getPlayerName && GQ.coop.getPlayerName()) || 'Host';
+      return players.add(defaultName, myClientId());
+    }
+    return null;
+  }
+
   function syncToClients() {
     if (GQ.coop && GQ.coop.isHost()) {
       GQ.coop.broadcastState();
@@ -111,9 +126,8 @@
   function bonusValue() {
     if (state.status === 'playing') {
       const rem = board.remaining();
-      // ถ้าเปิดครบทุกป้ายแล้วยังทายถูก ให้ได้อย่างน้อย 1 คะแนน (เว้นแต่โดนหักจนติดลบ)
-      const base = rem > 0 ? rem : 1;
-      return Math.max(rem > 0 ? 0 : 1, base - state.hintPenalty);
+      // รางวัลการตอบคิดจากจำนวนแผ่นป้ายที่เหลือโดยตรง (อย่างน้อย 1 คะแนน)
+      return rem > 0 ? rem : 1;
     }
     if (state.status === 'revealed') return state.bonus;
     return 0;
@@ -189,13 +203,14 @@
           dom.turnBannerStep.textContent = 'เพิ่มชื่อผู้เล่นด้านขวา หรือเปิดห้อง Co-op เพื่อเริ่มระบบรันคิวผลัดกันเล่นอัตโนมัติ';
         } else if (myTurn) {
           const selfTag = isClient() ? ' (ตาของคุณ!)' : '';
+          const scoreTag = ` [คะแนนของคุณ: ${active.score}]`;
           if (state.turnPhase === 'open') {
-            dom.turnBannerTitle.textContent = `🎯 ตาของ ${active.name}${selfTag} — ขั้นที่ 1: เปิดป้าย 1 ช่อง`;
+            dom.turnBannerTitle.textContent = `🎯 ตาของ ${active.name}${selfTag}${scoreTag} — ขั้นที่ 1: เปิดป้าย 1 ช่อง`;
             dom.turnBannerStep.textContent = 'คลิกเลือกแผ่นป้ายบนภาพ 1 ช่อง หรือกดปุ่ม "🎲 สุ่มเปิด 1 ช่อง" เพื่อเริ่มจับเวลา 15 วิ';
           } else {
-            dom.turnBannerTitle.textContent = `⌨️ ตาของ ${active.name}${selfTag} — ขั้นที่ 2: ทายชื่อตัวละคร!`;
+            dom.turnBannerTitle.textContent = `⌨️ ตาของ ${active.name}${selfTag}${scoreTag} — ขั้นที่ 2: ทายชื่อตัวละคร!`;
             const nextHint = nextP ? ` (คิวถัดไป: ${nextP.name})` : '';
-            dom.turnBannerStep.textContent = `มีเวลา ${state.timeLeft} วินาที — ถ้าตอบผิด (-${C.penalty.wrongGuess} แต้ม) หรือหมดเวลา สิทธิ์จะส่งต่อให้เพื่อนทันที${nextHint}`;
+            dom.turnBannerStep.textContent = `มีเวลา ${state.timeLeft} วินาที — ถ้าตอบผิด (หักคะแนนตัวเอง -${C.penalty.wrongGuess} แต้ม) หรือหมดเวลา สิทธิ์จะส่งต่อทันที${nextHint}`;
           }
         } else {
           if (state.turnPhase === 'open') {
@@ -260,14 +275,27 @@
 
     // ปุ่มตัวช่วยและการคุมเทิร์น
     if (dom.btnRandomTile) {
-      dom.btnRandomTile.disabled = !playing || !myTurn || !inOpenPhase || board.remaining() === 0;
+      const canRandom = playing && myTurn && inOpenPhase && board.remaining() > 0;
+      dom.btnRandomTile.disabled = !canRandom;
+      dom.btnRandomTile.classList.toggle('is-highlight', canRandom);
     }
     dom.hintDisplay.hidden = !(playing && state.hintLevel > 0 && state.hintText);
     dom.hintDisplay.textContent = state.hintText;
 
     dom.btnHint.disabled = !playing || !myTurn || state.hintLevel >= C.hints.max;
+    if (state.hintLevel >= C.hints.max) {
+      dom.btnHint.textContent = `💡 คำใบ้ครบ (${C.hints.max}/${C.hints.max})`;
+    } else if (state.hintLevel > 0) {
+      dom.btnHint.textContent = `💡 คำใบ้ ${state.hintLevel}/${C.hints.max} (-${C.penalty.hint} แต้ม)`;
+    } else {
+      dom.btnHint.textContent = `💡 คำใบ้ (-${C.penalty.hint} แต้ม)`;
+    }
+
     dom.btnPeek.disabled = !playing || !myTurn || !inOpenPhase || board.remaining() === 0;
     dom.btnPeek.classList.toggle('armed', state.peekArmed);
+    dom.btnPeek.textContent = state.peekArmed
+      ? '👁️ คลิกป้ายเพื่อแอบดู (ยกเลิก)'
+      : `👁️ แอบดู 1 ช่อง (-${C.penalty.peek} แต้ม)`;
 
     if (dom.btnPassTurn) {
       // ปุ่มข้ามเทิร์น: กดได้เมื่อเป็นตาตัวเอง หรือถ้าเป็น Host สามารถกดเพื่อบังคับข้ามคิวคนที่ค้างได้
@@ -612,8 +640,13 @@
 
     if (state.peekArmed) {
       state.peekArmed = false;
-      state.hintPenalty += C.penalty.peek;
-      flash(`👁️ แอบดูสำเร็จ! (-${C.penalty.peek} โบนัส) มีเวลาทาย 15 วิ`, 'peek', 2500);
+      const actor = getActorPlayer(actorClientId);
+      if (actor) {
+        players.adjust(actor.id, -C.penalty.peek);
+        flash(`👁️ ${actor.name} แอบดูสำเร็จ! (ใช้คะแนนตัวเอง -${C.penalty.peek} แต้ม) มีเวลาทาย 15 วิ`, 'peek', 2800);
+      } else {
+        flash(`👁️ แอบดูสำเร็จ! (-${C.penalty.peek} แต้ม) มีเวลาทาย 15 วิ`, 'peek', 2800);
+      }
       openTile(tile);
       return;
     }
@@ -699,10 +732,15 @@
       syncToClients();
       return;
     }
+    const actor = getActorPlayer(actorClientId);
     state.hintLevel += 1;
-    state.hintPenalty += C.penalty.hint;
     state.hintText = hintMask(state.current.name, state.hintLevel);
-    flash(`💡 เปิดคำใบ้ระดับ ${state.hintLevel} (-${C.penalty.hint} โบนัส)`, 'warn', 2500);
+    if (actor) {
+      players.adjust(actor.id, -C.penalty.hint);
+      flash(`💡 ${actor.name} เปิดคำใบ้ระดับ ${state.hintLevel}/${C.hints.max} (ใช้คะแนนตัวเอง -${C.penalty.hint} แต้ม)`, 'warn', 2800);
+    } else {
+      flash(`💡 เปิดคำใบ้ระดับ ${state.hintLevel}/${C.hints.max} (-${C.penalty.hint} แต้ม)`, 'warn', 2800);
+    }
     renderAll();
     syncToClients();
   }
@@ -757,11 +795,11 @@
     }
 
     if (U.isCorrectAnswer(guess, state.current.name)) {
-      const winner = active;
+      const winner = getActorPlayer(actorClientId);
       reveal({ giveUp: false, winner });
       if (winner) {
         awardTo(winner.id);
-        flash(`✅ ถูกต้องยอดเยี่ยม! ${winner.name} ตอบถูก ได้รับ +${state.bonus} คะแนน`, 'success', 0);
+        flash(`✅ ถูกต้องยอดเยี่ยม! ${winner.name} ตอบถูก ได้รับรางวัล +${state.bonus} คะแนน`, 'success', 0);
       } else {
         flash(`✅ ถูกต้องยอดเยี่ยม! คำตอบคือ ${state.current.name}`, 'success', 0);
       }
@@ -770,18 +808,20 @@
       return;
     }
 
-    // กรณีตอบผิด: หักคะแนนและส่งต่อคิวให้เพื่อนคนถัดไปทันที
-    if (active) {
-      players.adjust(active.id, -C.penalty.wrongGuess);
-      advanceTurn('wrong', active);
-    } else {
-      state.hintPenalty += C.penalty.wrongGuess;
-      flash(`❌ ยังไม่ถูก! หักโบนัสรอบนี้ -${C.penalty.wrongGuess} แต้ม`, 'danger', 2500);
-      dom.guessInput.value = '';
-      dom.guessInput.focus();
-      wiggle(dom.feedback);
-      renderAll();
-      syncToClients();
+    // กรณีตอบผิด: หักคะแนนของผู้เล่นเองและส่งต่อคิวให้เพื่อนคนถัดไปทันที
+    const actor = getActorPlayer(actorClientId);
+    if (actor) {
+      players.adjust(actor.id, -C.penalty.wrongGuess);
+      if (players.count() > 1) {
+        advanceTurn('wrong', actor);
+      } else {
+        beginTurnPhaseForCurrentPlayer();
+        flash(`❌ ${actor.name} ตอบผิด! (ใช้คะแนนตัวเอง -${C.penalty.wrongGuess} แต้ม) เปิดป้ายช่องต่อไปเพื่อทายใหม่`, 'danger', 3500);
+        dom.guessInput.value = '';
+        wiggle(dom.feedback);
+        renderAll();
+        syncToClients();
+      }
     }
   }
 

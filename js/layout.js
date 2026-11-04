@@ -36,17 +36,17 @@
   const PRESETS = {
     play: {
       label: '🎮 เล่นเกม',
-      build: () => split('row', 0.72, split('col', 0.8, leaf('stage'), leaf('control')), leaf('players')),
+      build: () => split('row', 0.72, split('col', 0.68, leaf('stage'), leaf('control')), leaf('players')),
     },
     manage: {
       label: '📊 จัดการคะแนน',
       build: () => split('row', 0.45,
-        split('col', 0.72, leaf('stage'), leaf('control')),
+        split('col', 0.66, leaf('stage'), leaf('control')),
         split('col', 0.5, leaf('players'), leaf('history'))),
     },
     focus: {
       label: '🖼 โฟกัสภาพ',
-      build: () => split('col', 0.85, leaf('stage'), leaf('control')),
+      build: () => split('col', 0.72, leaf('stage'), leaf('control')),
     },
   };
   const DEFAULT_PRESET = 'play';
@@ -71,7 +71,11 @@
     const b = sanitize(node.b, depth + 1);
     if (!a) return b;
     if (!b) return a;
-    return split(node.dir, clampRatio(node.ratio), a, b);
+    let ratio = clampRatio(node.ratio);
+    if (node.dir === 'col' && isLeaf(b) && b.pane === 'control' && ratio >= 0.78) {
+      ratio = 0.68;
+    }
+    return split(node.dir, ratio, a, b);
   }
 
   function loadTree() {

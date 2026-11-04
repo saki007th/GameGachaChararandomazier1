@@ -345,6 +345,7 @@
     init,
     add,
     upsertRemote,
+    findByClient,
     setOnline,
     remove,
     adjust,

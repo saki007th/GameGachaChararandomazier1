@@ -833,19 +833,22 @@
   }
 
   function renderUI() {
-    if (!dom.coopBtn) return;
-
-    if (role === 'host') {
-      dom.coopBtn.textContent = `🌐 ห้อง: ${roomCode} (Host)`;
-      dom.coopBtn.dataset.active = 'host';
-    } else if (role === 'client') {
-      dom.coopBtn.textContent = clientConnected
-        ? `🟢 ห้อง: ${roomCode} (${myName})`
-        : `⏳ กำลังเข้าห้อง ${roomCode}...`;
-      dom.coopBtn.dataset.active = 'client';
-    } else {
-      dom.coopBtn.textContent = '🌐 เปิดห้องออนไลน์ / หลายจอ';
-      delete dom.coopBtn.dataset.active;
+    if (dom.coopBtn) {
+      if (role === 'host') {
+        dom.coopBtn.textContent = `🌐 ห้อง: ${roomCode} (Host)`;
+        dom.coopBtn.dataset.active = 'host';
+      } else if (role === 'client') {
+        dom.coopBtn.textContent = clientConnected
+          ? `🟢 ห้อง: ${roomCode} (${myName})`
+          : `⏳ กำลังเข้าห้อง ${roomCode}...`;
+        dom.coopBtn.dataset.active = 'client';
+      } else {
+        dom.coopBtn.textContent = '🌐 เปิดห้องออนไลน์ / หลายจอ';
+        delete dom.coopBtn.dataset.active;
+      }
+    }
+    if (dom.coopQuickBtn) {
+      dom.coopQuickBtn.textContent = roomCode ? `🌐 #${roomCode}` : '🌐 ห้อง';
     }
 
     if (dom.setupSection) dom.setupSection.hidden = role !== 'standalone';
@@ -1090,6 +1093,7 @@
     getRole: () => role,
     getRoomCode: () => roomCode,
     getClientId: () => myClientId,
+    getPlayerName: () => myName,
     isInGame: () => inGame,
     isClient: () => role === 'client',
     isHost: () => role === 'host',
