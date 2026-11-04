@@ -391,18 +391,69 @@ kbd {
 }
 .link-btn:hover { opacity: 1; }
 
-/* ---------- Stage (ภาพ + ป้าย) ---------- */
-/* กรอบภาพ 4:5 ที่พอดีกับพาเนลเสมอ ไม่ว่าจะลากขนาดเท่าไร */
+/* ---------- Stage (ภาพ + ป้าย + ระบบปรับสัดส่วนและซูม) ---------- */
+.stage-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.zoom-btn {
+    padding: 3px 9px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: bold;
+    line-height: 1.2;
+}
+.zoom-btn:hover:not(:disabled) {
+    background: rgba(15, 185, 177, 0.22);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.zoom-btn--reset {
+    min-width: 62px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+.zoom-btn--reset.is-active {
+    background: rgba(15, 185, 177, 0.2);
+    border-color: var(--primary);
+    color: #70ebe4;
+}
+
+/* กรอบภาพปรับสัดส่วนอัตโนมัติตามภาพจริง (แนวตั้ง / แนวนอน / จัตุรัส) และพอดีกับพาเนลเสมอ */
 #stage {
+    --media-ratio: 0.8;
     position: relative;
-    width: min(100cqw, calc(100cqh * 0.8));
-    aspect-ratio: 4 / 5;
+    width: min(100cqw, calc(100cqh * var(--media-ratio)));
+    aspect-ratio: var(--media-ratio);
     container-type: size;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(15, 185, 177, 0.1);
     overflow: hidden;
+    touch-action: none;
+}
+
+.stage-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+#stage.is-zoomed .stage-canvas {
+    cursor: grab;
+}
+#stage.is-panning .stage-canvas,
+#stage.is-panning .grid-tile {
+    cursor: grabbing !important;
 }
 
 #media-img,
@@ -411,7 +462,7 @@ kbd {
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     user-select: none;
     pointer-events: none;
 }
@@ -431,6 +482,7 @@ kbd {
     justify-content: center;
     background: #2d3436;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 0 1px #2d3436;
     color: rgba(255, 255, 255, 0.3);
     font-size: clamp(0.8rem, 4cqmin, 1.6rem);
     font-weight: bold;
@@ -440,10 +492,11 @@ kbd {
     transform-origin: center;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
-.grid-tile:hover { background: #353b48; color: rgba(255, 255, 255, 0.8); }
+.grid-tile:hover { background: #353b48; box-shadow: 0 0 0 1px #353b48; color: rgba(255, 255, 255, 0.8); }
 .grid-tile.opened {
     transform: rotateX(90deg) scale(0.8);
     opacity: 0;
+    box-shadow: none;
     pointer-events: none;
     transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
 }
@@ -452,6 +505,7 @@ kbd {
 .grid-tile.locked:hover {
     background: #1f2428;
     border-color: rgba(252, 92, 101, 0.22);
+    box-shadow: 0 0 0 1px #1f2428;
     color: rgba(252, 92, 101, 0.45);
 }
 .grid-tile.locked::after {
@@ -975,10 +1029,12 @@ kbd {
 #stage.locked-for-turn .grid-tile:not(.opened) {
     cursor: not-allowed;
     background: #262c2e;
+    box-shadow: 0 0 0 1px #262c2e;
     color: rgba(255, 255, 255, 0.2);
 }
 #stage.locked-for-turn .grid-tile.locked:not(.opened) {
     background: #1c2125;
+    box-shadow: 0 0 0 1px #1c2125;
     color: rgba(252, 92, 101, 0.38);
 }
 
@@ -1707,6 +1763,6 @@ kbd {
     .slot { min-height: 300px; }
     .slot > .pane { min-height: 300px; }
     .pane__body { container-type: inline-size; }
-    .pane__body--stage { container-type: inline-size; min-height: 480px; }
-    #stage { width: min(100cqw, 420px); }
+    .pane__body--stage { container-type: inline-size; min-height: 360px; }
+    #stage { width: min(100cqw, calc(65vh * var(--media-ratio, 0.8))); }
 }

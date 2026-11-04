@@ -126,6 +126,7 @@
 
         <footer class="shortcuts">
             <span><kbd>คลิก</kbd> เปิดป้าย</span>
+            <span><kbd>ลูกกลิ้งเมาส์</kbd> ซูมภาพ / ลากเลื่อน</span>
             <span><kbd>Space</kbd> เปิดแบบสุ่ม</span>
             <span><kbd>Enter</kbd> เฉลย / ถัดไป</span>
             <span><kbd>Shift</kbd>+<kbd>R</kbd> เฉลยทันที</span>
@@ -139,6 +140,11 @@
         <section class="pane" data-pane="stage">
             <header class="pane__head">
                 <span class="pane__title">🖼 ภาพ</span>
+                <div class="pane__actions stage-zoom-controls">
+                    <button id="btn-zoom-out" class="zoom-btn" type="button" title="ซูมออก (เลื่อนลูกกลิ้งเมาส์ลง)">➖</button>
+                    <button id="btn-zoom-reset" class="zoom-btn zoom-btn--reset" type="button" title="รีเซ็ตขนาดซูม 100%">🔍 100%</button>
+                    <button id="btn-zoom-in" class="zoom-btn" type="button" title="ซูมเข้า (เลื่อนลูกกลิ้งเมาส์ขึ้น)">➕</button>
+                </div>
             </header>
             <div class="pane__body pane__body--stage">
                 <div id="stage">
@@ -147,10 +153,12 @@
                         <span id="loading-text">กำลังค้นหาตัวละคร...</span>
                     </div>
 
-                    <img id="media-img" alt="" draggable="false" hidden>
-                    <video id="media-video" autoplay loop muted playsinline hidden></video>
+                    <div id="stage-canvas" class="stage-canvas">
+                        <img id="media-img" alt="" draggable="false" hidden>
+                        <video id="media-video" autoplay loop muted playsinline hidden></video>
 
-                    <div id="grid"></div>
+                        <div id="grid"></div>
+                    </div>
 
                     <div id="error-card" class="error-card" hidden>
                         <span class="error-card__icon">⚠️</span>
